@@ -1,2 +1,2 @@
 # AI-Safety-Abuse
-Finetune an open-source model to improve its defense against prompt Injection
+Finetune llama-guard3:8b model to improve its reflection against prompt Injection
