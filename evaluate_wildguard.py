@@ -11,26 +11,30 @@ import os
 import sys
 
 from datasets import load_dataset
-from huggingface_hub import HfFolder
+from dotenv import load_dotenv
 from tqdm import tqdm
 
 from config import RESULTS_DIR
 from utils.llama_guard import parse_label, parse_violated_categories
 from utils.ollama_client import classify
 
+load_dotenv()
+
 
 def main():
     os.makedirs(RESULTS_DIR, exist_ok=True)
     output_path = os.path.join(RESULTS_DIR, "wildguard_results.json")
 
-    token = HfFolder.get_token()
-    if token is None:
-        print("ERROR: Not logged in to HuggingFace. Run: huggingface-cli login", file=sys.stderr)
+    token = os.environ.get("HF_TOKEN")
+    if not token:
+        print("ERROR: HF_TOKEN not set. Add it to .env or run: huggingface-cli login", file=sys.stderr)
         sys.exit(1)
 
     print("Loading WildGuardTest dataset...")
-    dataset = load_dataset("allenai/wildguardmix", "wildguardtest", split="test", token=token)
-    print(f"  Total examples: {len(dataset)}")
+    ds = load_dataset("allenai/wildguardmix", "wildguardtest", token=token)
+    split = list(ds.keys())[0]
+    dataset = ds[split]
+    print(f"  Split: '{split}', examples: {len(dataset)}")
 
     results = []
     skipped = 0

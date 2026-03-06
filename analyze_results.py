@@ -1,13 +1,24 @@
 """
-Analyze and report baseline evaluation results.
+Analyze and report evaluation results.
 
-Reads:
-  results/wildguard_results.json
-  results/jailbreakbench_results.json
+Single-model mode (default):
+  Reads:  results/wildguard_results.json
+          results/jailbreakbench_results.json
+  Output: results/summary_report.txt
 
-Prints a formatted report and saves it to results/summary_report.txt.
+Comparison mode (--compare):
+  Reads:  results/wildguard_results_baseline.json
+          results/wildguard_results_reflect.json
+          results/jailbreakbench_results_baseline.json
+          results/jailbreakbench_results_reflect.json
+  Output: results/comparison_report.txt
+
+Usage:
+  python analyze_results.py              # single-model report
+  python analyze_results.py --compare    # baseline vs Reflect-Guard comparison
 """
 
+import argparse
 import json
 import os
 from collections import defaultdict
@@ -26,6 +37,13 @@ from config import RESULTS_DIR
 WILDGUARD_PATH = os.path.join(RESULTS_DIR, "wildguard_results.json")
 JBB_PATH = os.path.join(RESULTS_DIR, "jailbreakbench_results.json")
 REPORT_PATH = os.path.join(RESULTS_DIR, "summary_report.txt")
+
+# Comparison mode paths
+WILDGUARD_BASELINE_PATH = os.path.join(RESULTS_DIR, "wildguard_results_baseline.json")
+WILDGUARD_REFLECT_PATH  = os.path.join(RESULTS_DIR, "wildguard_results_reflect.json")
+JBB_BASELINE_PATH       = os.path.join(RESULTS_DIR, "jailbreakbench_results_baseline.json")
+JBB_REFLECT_PATH        = os.path.join(RESULTS_DIR, "jailbreakbench_results_reflect.json")
+COMPARISON_REPORT_PATH  = os.path.join(RESULTS_DIR, "comparison_report.txt")
 
 
 def load_json(path: str) -> list[dict]:
@@ -130,7 +148,144 @@ def analyze_jailbreakbench(results: list[dict]) -> list[str]:
     return lines
 
 
+def _metrics_dict(results: list[dict]) -> dict:
+    """Return a flat dict of key metrics for a result set."""
+    y_true = [r["ground_truth"] for r in results]
+    y_pred = [r["predicted"] for r in results]
+    return {
+        "n": len(results),
+        "accuracy":  accuracy_score(y_true, y_pred),
+        "precision": precision_score(y_true, y_pred, pos_label="harmful", zero_division=0),
+        "recall":    recall_score(y_true, y_pred, pos_label="harmful", zero_division=0),
+        "f1":        f1_score(y_true, y_pred, pos_label="harmful", zero_division=0),
+    }
+
+
+def compare_wildguard(baseline: list[dict], reflect: list[dict]) -> list[str]:
+    lines = []
+    lines.append("=" * 70)
+    lines.append("WILDGUARD COMPARISON: Baseline vs. Reflect-Guard")
+    lines.append("=" * 70)
+
+    bm = _metrics_dict(baseline)
+    rm = _metrics_dict(reflect)
+
+    header = f"{'Metric':<14} {'Baseline':>10} {'Reflect-Guard':>15} {'Delta':>10}"
+    lines.append(header)
+    lines.append("-" * 54)
+    for key in ("accuracy", "precision", "recall", "f1"):
+        delta = rm[key] - bm[key]
+        sign = "+" if delta >= 0 else ""
+        lines.append(f"{key:<14} {bm[key]:>10.4f} {rm[key]:>15.4f} {sign}{delta:>9.4f}")
+
+    # Adversarial subset comparison
+    lines.append("\n--- Adversarial Subset (adversarial=True) ---")
+    for label, data in [("Baseline", baseline), ("Reflect-Guard", reflect)]:
+        sub = [r for r in data if r.get("adversarial") is True]
+        if sub:
+            m = _metrics_dict(sub)
+            lines.append(
+                f"  {label}: n={m['n']}, acc={m['accuracy']:.3f}, "
+                f"recall={m['recall']:.3f}, F1={m['f1']:.3f}"
+            )
+
+    # Per-attack-type breakdown (if method field present)
+    by_method_b: dict[str, list] = defaultdict(list)
+    by_method_r: dict[str, list] = defaultdict(list)
+    for r in baseline:
+        if r.get("method"):
+            by_method_b[r["method"]].append(r)
+    for r in reflect:
+        if r.get("method"):
+            by_method_r[r["method"]].append(r)
+
+    if by_method_b:
+        lines.append("\n--- Per-method Detection Rate ---")
+        all_methods = sorted(set(by_method_b) | set(by_method_r))
+        lines.append(f"  {'Method':<25} {'Baseline':>10} {'Reflect':>10}")
+        for method in all_methods:
+            b_sub = by_method_b.get(method, [])
+            r_sub = by_method_r.get(method, [])
+            b_det = sum(1 for x in b_sub if x["predicted"] == "harmful")
+            r_det = sum(1 for x in r_sub if x["predicted"] == "harmful")
+            b_rate = f"{b_det}/{len(b_sub)} ({100*b_det/len(b_sub):.0f}%)" if b_sub else "N/A"
+            r_rate = f"{r_det}/{len(r_sub)} ({100*r_det/len(r_sub):.0f}%)" if r_sub else "N/A"
+            lines.append(f"  {method:<25} {b_rate:>10} {r_rate:>10}")
+
+    return lines
+
+
+def run_comparison(report_path: str) -> None:
+    lines = []
+
+    missing = []
+    for path in (WILDGUARD_BASELINE_PATH, WILDGUARD_REFLECT_PATH):
+        if not os.path.exists(path):
+            missing.append(path)
+    if missing:
+        print(f"Missing files for comparison: {missing}")
+        print("Run evaluate_wildguard.py twice, saving outputs as "
+              "wildguard_results_baseline.json and wildguard_results_reflect.json")
+        return
+
+    baseline_wg = load_json(WILDGUARD_BASELINE_PATH)
+    reflect_wg  = load_json(WILDGUARD_REFLECT_PATH)
+    lines.extend(compare_wildguard(baseline_wg, reflect_wg))
+
+    # JBB comparison (optional)
+    if os.path.exists(JBB_BASELINE_PATH) and os.path.exists(JBB_REFLECT_PATH):
+        b_jbb = load_json(JBB_BASELINE_PATH)
+        r_jbb = load_json(JBB_REFLECT_PATH)
+        b_det = sum(1 for x in b_jbb if x["predicted"] == "harmful")
+        r_det = sum(1 for x in r_jbb if x["predicted"] == "harmful")
+        lines.append("\n" + "=" * 70)
+        lines.append("JAILBREAKBENCH COMPARISON")
+        lines.append("=" * 70)
+        lines.append(
+            f"Baseline      detected: {fmt_pct(b_det, len(b_jbb))}"
+        )
+        lines.append(
+            f"Reflect-Guard detected: {fmt_pct(r_det, len(r_jbb))}"
+        )
+        lines.append(f"ASR reduction: {100*(b_jbb.__len__()-b_det)/len(b_jbb):.1f}% → "
+                     f"{100*(len(r_jbb)-r_det)/len(r_jbb):.1f}%  "
+                     f"(lower is better for attacker)")
+
+        # Per-method
+        by_method_b: dict[str, list] = defaultdict(list)
+        by_method_r: dict[str, list] = defaultdict(list)
+        for x in b_jbb:
+            by_method_b[x["method"]].append(x)
+        for x in r_jbb:
+            by_method_r[x["method"]].append(x)
+        lines.append(f"\n  {'Method':<25} {'Baseline DR':>12} {'Reflect DR':>12}")
+        for method in sorted(set(by_method_b) | set(by_method_r)):
+            b_s = by_method_b.get(method, [])
+            r_s = by_method_r.get(method, [])
+            b_d = sum(1 for x in b_s if x["predicted"] == "harmful")
+            r_d = sum(1 for x in r_s if x["predicted"] == "harmful")
+            lines.append(
+                f"  {method:<25} {fmt_pct(b_d, len(b_s)):>12} {fmt_pct(r_d, len(r_s)):>12}"
+            )
+
+    report = "\n".join(lines)
+    print(report)
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    with open(report_path, "w") as f:
+        f.write(report + "\n")
+    print(f"\nComparison report saved to {report_path}")
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--compare", action="store_true",
+                        help="Compare baseline vs Reflect-Guard results.")
+    args = parser.parse_args()
+
+    if args.compare:
+        run_comparison(COMPARISON_REPORT_PATH)
+        return
+
     report_lines = []
 
     if os.path.exists(WILDGUARD_PATH):
