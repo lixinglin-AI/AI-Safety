@@ -78,7 +78,7 @@ def classify(prompt: str, model, tokenizer, max_new_tokens: int = 100) -> str:
 
 
 def evaluate_wildguard(model, tokenizer, hf_token: str):
-    output_path = os.path.join(RESULTS_DIR, "wildguard_results.json")
+    output_path = os.path.join(RESULTS_DIR, "wildguard_results_baseline.json")
 
     if os.path.exists(output_path):
         print(f"Baseline WildGuard results already exist at {output_path}. Skipping.")
@@ -124,7 +124,7 @@ def evaluate_wildguard(model, tokenizer, hf_token: str):
 
 
 def evaluate_jailbreakbench(model, tokenizer):
-    output_path = os.path.join(RESULTS_DIR, "jailbreakbench_results.json")
+    output_path = os.path.join(RESULTS_DIR, "jailbreakbench_results_baseline.json")
 
     try:
         import jailbreakbench as jbb
@@ -192,9 +192,14 @@ def main():
         default="both",
         help="Which benchmark to evaluate on",
     )
+    parser.add_argument(
+        "--hf-token",
+        default=None,
+        help="HuggingFace token (or set HF_TOKEN env var; falls back to interactive prompt)",
+    )
     args = parser.parse_args()
 
-    hf_token = getpass.getpass("Enter your HuggingFace token (HF_TOKEN): ").strip()
+    hf_token = args.hf_token or os.environ.get("HF_TOKEN") or getpass.getpass("Enter your HuggingFace token: ").strip()
     if not hf_token:
         print("ERROR: HuggingFace token is required.", file=sys.stderr)
         sys.exit(1)

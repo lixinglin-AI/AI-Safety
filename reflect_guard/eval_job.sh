@@ -12,5 +12,8 @@ conda activate reflect_guard
 
 cd /vast/palmer/home.mccleary/ll2276/AI-Safety-Abuse
 
-# Run evaluation (tokens passed via env var to avoid interactive prompt)
+# Step 1: Baseline JailbreakBench (WildGuard baseline already exists as wildguard_results_baseline.json)
+python reflect_guard/evaluate_baseline_hpc.py --dataset jailbreakbench --hf-token "$HF_TOKEN"
+
+# Step 2: Reflect-Guard on both benchmarks
 python reflect_guard/evaluate_reflect_guard.py --dataset both --hf-token "$HF_TOKEN"

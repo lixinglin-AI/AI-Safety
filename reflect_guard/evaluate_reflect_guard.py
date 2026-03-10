@@ -51,6 +51,10 @@ def load_model(hf_token: str):
     )
     model = PeftModel.from_pretrained(base_model, ADAPTER_SAVE_PATH)
     model.eval()
+    # Ensure use_cache is on for inference (training disables it for gradient checkpointing)
+    model.config.use_cache = True
+    if hasattr(model, "base_model"):
+        model.base_model.config.use_cache = True
     print("Reflect-Guard model loaded.")
     return model, tokenizer
 
@@ -78,7 +82,7 @@ def classify(prompt: str, model, tokenizer, max_new_tokens: int = 150) -> str:
 
 
 def evaluate_wildguard(model, tokenizer, hf_token: str):
-    output_path = os.path.join(RESULTS_DIR, "reflect_wildguard_results.json")
+    output_path = os.path.join(RESULTS_DIR, "wildguard_results_reflect.json")
 
     print("Loading WildGuardTest dataset...")
     ds = load_dataset("allenai/wildguardmix", "wildguardtest", token=hf_token)
@@ -121,7 +125,7 @@ def evaluate_wildguard(model, tokenizer, hf_token: str):
 
 
 def evaluate_jailbreakbench(model, tokenizer):
-    output_path = os.path.join(RESULTS_DIR, "reflect_jailbreakbench_results.json")
+    output_path = os.path.join(RESULTS_DIR, "jailbreakbench_results_reflect.json")
 
     try:
         import jailbreakbench as jbb

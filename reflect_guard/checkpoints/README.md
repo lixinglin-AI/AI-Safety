@@ -4,8 +4,8 @@ library_name: transformers
 model_name: checkpoints
 tags:
 - generated_from_trainer
-- sft
 - trl
+- sft
 licence: license
 ---
 
@@ -36,7 +36,7 @@ This model was trained with SFT.
 ### Framework versions
 
 - TRL: 0.29.0
-- Transformers: 5.3.0
+- Transformers: 4.57.6
 - Pytorch: 2.5.1+cu121
 - Datasets: 4.6.1
 - Tokenizers: 0.22.2
