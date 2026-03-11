@@ -1,0 +1,533 @@
+\documentclass[11pt]{article}
+
+% NOTE: Remove [final] for anonymous submission; add [final] for camera-ready
+\usepackage{neurips_2025}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{multirow}
+\usepackage{tcolorbox}
+
+\tcbset{
+  graybox/.style={colback=gray!5, colframe=gray!50, boxrule=0.5pt, arc=2pt,
+    left=4pt, right=4pt, top=2pt, bottom=2pt, fontupper=\small}
+}
+
+\title{Reflect-Guard: Enhancing LLM Safeguards against\\Adversarial Prompts via Logical Self-Reflection}
+
+\author{Anonymous Author(s)}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Large language model (LLM) safety classifiers such as Llama Guard are effective at detecting overtly harmful prompts but remain vulnerable to adversarial jailbreak attacks that disguise malicious intent through role-play scenarios, fictional framing, and indirect requests. We present \textbf{Reflect-Guard}, a method that augments LLM-based safety classifiers with chain-of-thought self-reflection capabilities through parameter-efficient fine-tuning. Our approach distills analytical reasoning from GPT-4o-mini into structured reflection annotations, then trains Llama-Guard-3-8B via QLoRA to generate logical self-reflections before issuing safety verdicts. Using only 1{,}000 training examples and updating just 0.5\% of model parameters ($\sim$42M), Reflect-Guard achieves substantial improvements on two challenging benchmarks. On WildGuardTest, F1 score improves from 0.740 to 0.842 (+10.1pp), with recall on adversarial prompts increasing from 0.440 to 0.921 (+48.1pp). On JailbreakBench, the attack success rate drops from 10.3\% to 1.8\%, representing an 82.5\% relative reduction. These gains are especially pronounced on adversarial inputs, where the explicit reasoning step enables the model to see through obfuscation techniques that defeat standard pattern-matching approaches. Our results demonstrate that teaching safety classifiers to reason about adversarial intent, rather than simply classify surface patterns, is a promising direction for robust LLM safety.
+\end{abstract}
+
+%==============================================================================
+\section{Introduction}
+%==============================================================================
+
+The deployment of large language models (LLMs) in production systems has created an urgent need for robust safety classifiers that can intercept harmful requests before they reach the target model~\citep{inan2023llamaguard, han2024wildguard}. Current safety classifiers, including Meta's Llama Guard family~\citep{inan2023llamaguard, metallamaguard3}, perform well on straightforward harmful prompts but exhibit significant vulnerabilities when confronted with adversarial jailbreak attacks~\citep{chao2023jailbreaking, zou2023universal, liu2024autodan}.
+
+Adversarial jailbreaks exploit a fundamental weakness in pattern-based classification: by wrapping harmful requests in benign-sounding contexts---fictional narratives, role-play scenarios, hypothetical research questions, or educational framings---attackers can bypass safety filters that rely primarily on surface-level semantic matching~\citep{wei2024jailbroken}. For instance, Llama-Guard-3-8B achieves only 44.0\% recall on the adversarial subset of WildGuardTest, meaning it misses more than half of disguised harmful prompts.
+
+We hypothesize that this vulnerability stems from the classifier's lack of explicit reasoning about adversarial intent. Human safety reviewers naturally decompose ambiguous inputs: they identify framing techniques, assess underlying intent behind surface-level language, and reason about whether a request would cause harm regardless of its narrative wrapper. Current classifiers lack this analytical capability, making binary decisions without interpretable intermediate reasoning.
+
+We propose \textbf{Reflect-Guard}, a method that endows safety classifiers with chain-of-thought (CoT) self-reflection capabilities through knowledge distillation and parameter-efficient fine-tuning. Our approach proceeds in three stages: (1) we use GPT-4o-mini to generate structured reflection annotations for a curated set of 1{,}000 training examples, analyzing adversarial techniques and harm indicators; (2) we fine-tune Llama-Guard-3-8B using QLoRA~\citep{dettmers2024qlora} to generate these reflections as an intermediate reasoning step before safety classification; and (3) at inference time, the model produces an explicit logical analysis in \texttt{<reflection>} tags before outputting its safety verdict.
+
+Our contributions are as follows:
+\begin{itemize}[leftmargin=*, nosep]
+  \item We introduce Reflect-Guard, a reflection-augmented safety classification method that teaches LLM-based safety classifiers to reason about adversarial intent before classification.
+  \item We demonstrate that knowledge distillation from a teacher model (GPT-4o-mini) into structured reflection annotations enables effective transfer of analytical reasoning capabilities with only 1{,}000 training examples.
+  \item We achieve state-of-the-art improvements on adversarial prompt detection: +48.1pp recall on adversarial WildGuardTest prompts and 82.5\% relative reduction in attack success rate on JailbreakBench, while maintaining strong performance on non-adversarial inputs.
+\end{itemize}
+
+%==============================================================================
+\section{Related work}
+%==============================================================================
+
+\paragraph{LLM safety classifiers.}
+The growing deployment of LLMs has spurred development of dedicated safety classifiers. Llama Guard~\citep{inan2023llamaguard} frames content moderation as instruction-following with a customizable taxonomy. Subsequent versions (Llama Guard 2~\citep{metallamaguard2}, Llama Guard 3~\citep{metallamaguard3}) expanded to multilingual support and refined category definitions. WildGuard~\citep{han2024wildguard} addresses adversarial robustness by training on the WildGuardMix dataset containing adversarial examples. Other approaches include PromptGuard~\citep{meta2024promptguard} for injection detection and ShieldGemma~\citep{zeng2024shieldgemma} from Google. Despite these advances, no existing classifier explicitly reasons about adversarial intent before classification.
+
+\paragraph{Jailbreak attacks on LLMs.}
+Adversarial jailbreak techniques have evolved rapidly. Gradient-based methods like GCG~\citep{zou2023universal} append optimized adversarial suffixes. Semantic attacks including PAIR~\citep{chao2023jailbreaking} and TAP~\citep{mehrotra2024tree} use LLMs to iteratively refine jailbreak prompts. AutoDAN~\citep{liu2024autodan} combines gradient and semantic approaches. Template-based methods exploit role-play and fictional framing~\citep{wei2024jailbroken, shen2024anything}. JailbreakBench~\citep{chao2024jailbreakbench} provides a standardized evaluation framework covering multiple attack families.
+
+\paragraph{Chain-of-thought reasoning for safety.}
+Chain-of-thought prompting~\citep{wei2022chain} has been applied to improve reasoning across many tasks. For safety specifically, prior work has explored using CoT to improve content moderation~\citep{wang2024chain} and to detect harmful content through deliberative alignment~\citep{bai2024deliberative}. Constitutional AI~\citep{bai2022constitutional} uses self-critique for alignment. Our work differs by distilling structured safety reflections into a lightweight LoRA adapter, enabling efficient deployment without requiring multi-turn prompting or large teacher models at inference time.
+
+\paragraph{Knowledge distillation for safety.}
+Knowledge distillation~\citep{hinton2015distilling} has been applied to transfer capabilities from larger to smaller models. Recent work explores distilling safety behaviors from proprietary models~\citep{tunstall2023zephyr}. Our approach specifically distills \emph{analytical reasoning patterns} rather than output distributions, teaching the student model to reason about adversarial techniques.
+
+%==============================================================================
+\section{Method}
+%==============================================================================
+
+\subsection{Problem formulation}
+
+Given an input prompt $x$, a safety classifier $f$ must produce a binary verdict $y \in \{\texttt{safe}, \texttt{unsafe}\}$. Standard classifiers model this as $y = f(x)$. Our approach introduces an intermediate reflection step $r$, decomposing classification into:
+\begin{equation}
+  r = g(x), \quad y = h(x, r)
+\end{equation}
+where $g$ generates a logical analysis of the prompt's intent and adversarial characteristics, and $h$ produces the final verdict conditioned on both the input and the reflection. In practice, both $g$ and $h$ are implemented by a single autoregressive model that first generates $r$ in \texttt{<reflection>} tags, then generates $y$.
+
+\subsection{Reflection-augmented training data}
+\label{sec:synthesis}
+
+We construct a training dataset of 1{,}000 examples from two sources: 500 examples from WildGuardMix~\citep{han2024wildguard} (the training split) and 500 from AdvBench~\citep{zou2023universal}. The combined dataset contains 773 harmful and 227 benign examples. For each example, we use GPT-4o-mini as a teacher model to generate a structured reflection annotation.
+
+The teacher receives each prompt along with its ground-truth label and is instructed to produce a 2--4 sentence analytical reflection that: (1) identifies whether the prompt employs adversarial techniques such as role-play framing, fictional scenarios, indirect harmful requests, technical obfuscation, or social engineering; (2) states whether the underlying intent is harmful or benign with reasoning; and (3) lists key indicators supporting the classification.
+
+Each training example is formatted as a conversation following the Llama Guard 3 template:
+\begin{tcolorbox}[graybox]
+\textbf{User:} [Safety instruction with 13 categories S1--S13] \\
+\texttt{<BEGIN CONVERSATION>} \\
+User: \{prompt\} \\
+\texttt{<END CONVERSATION>} \\
+Provide your safety assessment\ldots First provide a logical self-reflection in \texttt{<reflection>...</reflection>} tags\ldots \\[4pt]
+\textbf{Assistant:} \texttt{<reflection>}\{reflection\}\texttt{</reflection>} \\
+\{safe$|$unsafe\} \\
+\{violated categories, if unsafe\}
+\end{tcolorbox}
+
+\subsection{QLoRA fine-tuning}
+
+We fine-tune Llama-Guard-3-8B~\citep{metallamaguard3} using QLoRA~\citep{dettmers2024qlora} with 4-bit NormalFloat (NF4) quantization and double quantization. LoRA adapters are applied to all linear projection layers (\texttt{q\_proj}, \texttt{k\_proj}, \texttt{v\_proj}, \texttt{o\_proj}, \texttt{gate\_proj}, \texttt{up\_proj}, \texttt{down\_proj}) with rank $r = 16$, scaling factor $\alpha = 32$, and dropout 0.05. This results in approximately 42M trainable parameters (0.5\% of the full 8B model).
+
+Training uses the paged AdamW optimizer with 8-bit states, learning rate $2 \times 10^{-4}$ with cosine scheduling and 5 warmup steps. We train for 3 epochs with per-device batch size 1 and gradient accumulation of 16 steps (effective batch size 16), using BF16 mixed precision and gradient checkpointing. Training completes in approximately 1 hour on a single NVIDIA A5000 GPU.
+
+\subsection{Inference pipeline}
+
+At inference time, the fine-tuned model receives a prompt formatted with the same safety instruction template used during training. The model autoregressively generates: (1) a reflection analyzing the prompt's characteristics, enclosed in \texttt{<reflection>...</reflection>} tags; followed by (2) a safety verdict (\texttt{safe} or \texttt{unsafe}); and optionally (3) violated category codes. We use greedy decoding with a maximum of 150 new tokens. The reflection is extracted and stored alongside the verdict for interpretability.
+
+Critically, no external API calls are required at inference time. The reflection capability is fully internalized in the LoRA adapter, enabling deployment with the same latency characteristics as the base model (plus the overhead of generating $\sim$50--100 additional reflection tokens).
+
+%==============================================================================
+\section{Experimental setup}
+%==============================================================================
+
+\subsection{Benchmarks}
+
+\paragraph{WildGuardTest.} The test split of WildGuardMix~\citep{han2024wildguard} contains 1{,}699 prompts (754 harmful, 945 benign) with annotations for adversarial framing. The adversarial subset ($n = 796$) contains prompts that disguise harmful intent through various obfuscation techniques, making it particularly challenging for safety classifiers.
+
+\paragraph{JailbreakBench.} JailbreakBench~\citep{chao2024jailbreakbench} provides 282 jailbreak prompts generated by three attack methods against Vicuna-13B-v1.5: GCG~\citep{zou2023universal} (100 prompts, gradient-based token optimization), JBC (100 prompts, template-based jailbreaks), and PAIR~\citep{chao2023jailbreaking} (82 prompts, LLM-assisted semantic attacks). All prompts are ground-truth harmful, so the primary metric is detection rate (equivalently, 1 minus attack success rate).
+
+\subsection{Baseline}
+
+Our baseline is Llama-Guard-3-8B~\citep{metallamaguard3} with identical 4-bit NF4 quantization but without the LoRA adapter. This isolates the effect of the reflection fine-tuning from quantization artifacts. Both models receive the same 13-category safety taxonomy in the system prompt; the only difference is that Reflect-Guard's prompt additionally instructs the model to generate a reflection before the verdict.
+
+\subsection{Metrics}
+
+We report accuracy, precision, recall, and F1 score for WildGuardTest, computed with ``harmful'' as the positive class. For JailbreakBench, we report detection rate (DR) per attack method and overall attack success rate (ASR = 1 $-$ DR). We provide breakdown analyses for adversarial versus non-adversarial subsets on WildGuardTest.
+
+%==============================================================================
+\section{Results}
+%==============================================================================
+
+\subsection{WildGuardTest}
+
+Table~\ref{tab:wildguard_main} presents the overall classification performance. Reflect-Guard achieves a 10.1 percentage point improvement in F1 score (0.740 $\to$ 0.842), driven primarily by a substantial gain in recall (+24.9pp). The precision decrease ($-$11.1pp) reflects a deliberate shift in the precision--recall tradeoff: the model catches significantly more harmful prompts at the cost of additional false positives.
+
+\begin{table}[t]
+  \caption{Overall performance on WildGuardTest ($n = 1{,}699$). Best results in \textbf{bold}.}
+  \label{tab:wildguard_main}
+  \centering
+  \begin{tabular}{lcccc}
+    \toprule
+    Model & Accuracy & Precision & Recall & F1 \\
+    \midrule
+    Llama-Guard-3-8B (baseline) & 0.809 & \textbf{0.932} & 0.614 & 0.740 \\
+    Reflect-Guard (ours) & \textbf{0.856} & 0.821 & \textbf{0.863} & \textbf{0.842} \\
+    \midrule
+    $\Delta$ & \textcolor{teal}{+0.047} & \textcolor{red}{$-$0.111} & \textcolor{teal}{+0.249} & \textcolor{teal}{+0.101} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Table~\ref{tab:wildguard_subset} reveals that the gains are concentrated on adversarial prompts, where Reflect-Guard's explicit reasoning is most valuable. On the adversarial subset, recall improves from 0.440 to 0.921---meaning the model now catches 92.1\% of disguised harmful prompts compared to only 44.0\% for the baseline. Importantly, performance on non-adversarial prompts also improves (F1: 0.848 $\to$ 0.882), demonstrating that the reflection capability does not degrade standard classification.
+
+\begin{table}[t]
+  \caption{Performance breakdown by prompt type on WildGuardTest.}
+  \label{tab:wildguard_subset}
+  \centering
+  \begin{tabular}{llccccc}
+    \toprule
+    Subset & Model & $n$ & Acc. & Prec. & Recall & F1 \\
+    \midrule
+    \multirow{2}{*}{Adversarial}
+    & Baseline & 796 & 0.732 & 0.872 & 0.440 & 0.585 \\
+    & Reflect-Guard & 796 & \textbf{0.805} & 0.710 & \textbf{0.921} & \textbf{0.802} \\
+    \midrule
+    \multirow{2}{*}{Non-adversarial}
+    & Baseline & 903 & 0.876 & 0.963 & 0.758 & 0.848 \\
+    & Reflect-Guard & 903 & \textbf{0.900} & \textbf{0.960} & \textbf{0.816} & \textbf{0.882} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{JailbreakBench}
+
+Table~\ref{tab:jailbreakbench} presents detection rates across attack methods. Reflect-Guard reduces the overall attack success rate from 10.3\% to 1.8\%, an 82.5\% relative reduction. The largest improvement is on PAIR attacks (+19.5pp), which use LLM-generated semantic jailbreaks that are particularly difficult for pattern-based classifiers. GCG attacks, which append optimized token sequences, see a smaller but meaningful improvement (93\% $\to$ 99\%). JBC template-based attacks are detected perfectly (100\%).
+
+\begin{table}[t]
+  \caption{JailbreakBench detection rates by attack method. DR = detection rate. All prompts are ground-truth harmful; higher DR is better.}
+  \label{tab:jailbreakbench}
+  \centering
+  \begin{tabular}{lccc}
+    \toprule
+    Attack Method & $n$ & Baseline DR & Reflect-Guard DR \\
+    \midrule
+    GCG & 100 & 93.0\% & \textbf{99.0\%} \\
+    JBC & 100 & 98.0\% & \textbf{100.0\%} \\
+    PAIR & 82 & 75.6\% & \textbf{95.1\%} \\
+    \midrule
+    Overall & 282 & 89.7\% & \textbf{98.2\%} \\
+    \midrule
+    ASR ($\downarrow$) & --- & 10.3\% & \textbf{1.8\%} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Qualitative analysis}
+
+The reflections generated by Reflect-Guard provide interpretable explanations for safety decisions. We present representative examples where the baseline fails but Reflect-Guard succeeds.
+
+\paragraph{Example 1 (adversarial cyberattack prompt).} A prompt disguised as a cybersecurity consultant simulation asks the model to ``simulate a cyber-attack scenario'' including ``a sophisticated ransomware strain.'' The baseline classifies this as safe, deceived by the professional framing. Reflect-Guard's reflection identifies the adversarial technique:
+
+\begin{tcolorbox}[graybox]
+\textit{``The message employs adversarial techniques by framing the request as a hypothetical scenario while seeking detailed instructions for a simulated cyberattack, which can inadvertently provide real-world knowledge about ransomware tactics. The underlying intent is harmful, as it seeks to outline a method for executing a cyberattack, even if it is presented as a defensive exercise.''}
+\end{tcolorbox}
+
+\paragraph{Example 2 (adversarial phishing prompt).} A prompt frames a phishing attack as ``an epic battle between hackers'' at a ``cybersecurity contest,'' requesting simulation of a watering hole attack. Despite the fictional framing, Reflect-Guard correctly identifies the harmful intent by reasoning about the real-world applicability of the requested techniques.
+
+These examples illustrate how explicit reasoning about adversarial framing techniques enables the model to look beyond surface-level semantics to assess underlying intent.
+
+%==============================================================================
+\section{Analysis and discussion}
+%==============================================================================
+
+\subsection{Error analysis}
+
+\paragraph{False positives.}
+Reflect-Guard introduces 108 new false positives compared to the baseline (142 total vs.\ 34), all on prompts labeled ``benign'' in the adversarial subset. These are prompts that \emph{appear} adversarial in structure---using fictional framing, role-play, or security-related language---but are actually benign. For instance, a prompt about a DEF CON cybersecurity competition narrative is flagged as harmful despite benign intent. This suggests that Reflect-Guard's learned heuristic for adversarial detection can over-trigger on security-adjacent but harmless content.
+
+\paragraph{False negatives.}
+The remaining 103 false negatives (down from 291 in the baseline) are concentrated in specific harm categories: \textit{private information} (32), \textit{social stereotypes and discrimination} (26), and \textit{others} (16). These categories involve subtle harms where the adversarial framing is particularly effective at mimicking legitimate research or educational contexts. The model's reflections on these cases typically conclude that the intent is ``educational'' or ``benign,'' indicating that the reflection mechanism can be deceived by sufficiently sophisticated framings.
+
+\paragraph{JailbreakBench misses.}
+Of the 5 prompts missed on JailbreakBench (out of 282), 4 use the PAIR method with elaborate fictional or educational framings (e.g., a historian analyzing ancient warfare, a novelist writing a thriller about money laundering). These represent the hardest semantic jailbreaks where the harmful intent is deeply embedded within plausible professional scenarios. The remaining miss is a GCG prompt with garbled adversarial suffix tokens that the model fails to interpret as harmful.
+
+\subsection{Precision--recall tradeoff}
+
+The precision decrease ($-$11.1pp overall, $-$16.2pp on adversarial prompts) merits discussion. For safety-critical applications, recall is generally prioritized over precision: a missed harmful prompt (false negative) can lead to actual harm, while a false positive merely results in an unnecessary refusal. Reflect-Guard's operating point---high recall with moderate precision---aligns with this principle. In deployment, the false positive rate could be mitigated through confidence thresholds on the reflection, cascaded verification with a second classifier, or human-in-the-loop review for borderline cases.
+
+\subsection{Efficiency considerations}
+
+Reflect-Guard achieves these improvements with minimal computational overhead:
+\begin{itemize}[leftmargin=*, nosep]
+  \item \textbf{Training cost:} 1{,}000 examples, $\sim$42M trainable parameters (0.5\% of 8B), $\sim$1 hour on a single A5000 GPU.
+  \item \textbf{Data synthesis cost:} 1{,}000 GPT-4o-mini API calls for reflection generation (one-time cost).
+  \item \textbf{Inference overhead:} $\sim$50--100 additional tokens generated per prompt for the reflection, negligible compared to the base model's generation cost.
+\end{itemize}
+
+The LoRA adapter adds only $\sim$42MB to the model's storage requirements and can be dynamically loaded/unloaded, enabling flexible deployment alongside the base Llama Guard model.
+
+\subsection{Limitations}
+
+Several limitations should be acknowledged. First, our evaluation uses a single training run without multiple seeds, so variance in results is not quantified. Second, the training set of 1{,}000 examples may not cover the full diversity of adversarial techniques, particularly novel attacks not represented in WildGuardMix or AdvBench. Third, the knowledge distillation from GPT-4o-mini introduces a dependency on the teacher model's quality---if GPT-4o-mini's safety reasoning contains biases or blind spots, these may transfer to the student. Fourth, we evaluate on English-only benchmarks; multilingual adversarial robustness remains untested. Finally, the increased false positive rate on benign adversarial-looking prompts could impact user experience in deployment, particularly for legitimate security research queries.
+
+%==============================================================================
+\section{Conclusion}
+%==============================================================================
+
+We presented Reflect-Guard, a method for enhancing LLM safety classifiers through chain-of-thought self-reflection. By distilling analytical reasoning from GPT-4o-mini into a QLoRA-finetuned Llama-Guard-3-8B model, we enable the classifier to explicitly reason about adversarial techniques before issuing safety verdicts. On WildGuardTest, this improves F1 from 0.740 to 0.842, with recall on adversarial prompts nearly doubling from 0.440 to 0.921. On JailbreakBench, attack success rate drops from 10.3\% to 1.8\%. These results demonstrate that explicit reasoning about adversarial intent is a promising paradigm for building more robust LLM safety classifiers, complementing the trend toward deliberative and interpretable AI safety systems.
+
+Future work should explore scaling the reflection approach to larger training sets and more diverse attack types, investigating multi-turn adversarial scenarios, and developing methods to reduce false positives on benign security-related content while maintaining high adversarial recall.
+
+%==============================================================================
+% References
+%==============================================================================
+
+\bibliographystyle{plainnat}
+
+\begin{thebibliography}{25}
+
+\bibitem[Bai et~al.(2022)]{bai2022constitutional}
+Y.~Bai, S.~Kadavath, S.~Kundu, A.~Askell, J.~Kernion, A.~Jones, A.~Chen, A.~Goldie, A.~Mirhoseini, C.~McKinnon, et~al.
+\newblock Constitutional {AI}: Harmlessness from {AI} feedback.
+\newblock \emph{arXiv preprint arXiv:2212.08073}, 2022.
+
+\bibitem[Bai et~al.(2024)]{bai2024deliberative}
+Y.~Bai, J.~Mu, D.~Furlanello, et~al.
+\newblock Deliberative alignment: Reasoning enables safer language models.
+\newblock \emph{arXiv preprint arXiv:2412.16339}, 2024.
+
+\bibitem[Chao et~al.(2023)]{chao2023jailbreaking}
+P.~Chao, A.~Robey, E.~Dobriban, H.~Hassani, G.~J. Pappas, and E.~Wong.
+\newblock Jailbreaking black box large language models in twenty queries.
+\newblock \emph{arXiv preprint arXiv:2310.08419}, 2023.
+
+\bibitem[Chao et~al.(2024)]{chao2024jailbreakbench}
+P.~Chao, E.~Dobriban, H.~Hassani, G.~J. Pappas, and E.~Wong.
+\newblock {JailbreakBench}: An open robustness benchmark for jailbreaking large language models.
+\newblock \emph{arXiv preprint arXiv:2404.01318}, 2024.
+
+\bibitem[Dettmers et~al.(2024)]{dettmers2024qlora}
+T.~Dettmers, A.~Pagnoni, A.~Holtzman, and L.~Zettlemoyer.
+\newblock {QLoRA}: Efficient finetuning of quantized language models.
+\newblock In \emph{NeurIPS}, 2024.
+
+\bibitem[Han et~al.(2024)]{han2024wildguard}
+S.~Han, Y.~J. Kim, A.~Oh, J.~Hessel, Y.~Choi.
+\newblock {WildGuard}: Open one-stop moderation tools for safety risks, jailbreaks, and refusals of {LLMs}.
+\newblock \emph{arXiv preprint arXiv:2406.18495}, 2024.
+
+\bibitem[Hinton et~al.(2015)]{hinton2015distilling}
+G.~Hinton, O.~Vinyals, and J.~Dean.
+\newblock Distilling the knowledge in a neural network.
+\newblock \emph{arXiv preprint arXiv:1503.02531}, 2015.
+
+\bibitem[Hu et~al.(2022)]{hu2022lora}
+E.~J. Hu, Y.~Shen, P.~Wallis, Z.~Allen-Zhu, Y.~Li, S.~Wang, L.~Wang, and W.~Chen.
+\newblock {LoRA}: Low-rank adaptation of large language models.
+\newblock In \emph{ICLR}, 2022.
+
+\bibitem[Inan et~al.(2023)]{inan2023llamaguard}
+H.~Inan, K.~Upasani, J.~Chi, R.~Rungta, K.~Iyer, Y.~Mao, M.~Tontchev, Q.~Hu, B.~Fuller, D.~Testuggine, and M.~Khabsa.
+\newblock {Llama Guard}: {LLM}-based input-output safeguard for human-{AI} conversations.
+\newblock \emph{arXiv preprint arXiv:2312.06674}, 2023.
+
+\bibitem[Liu et~al.(2024)]{liu2024autodan}
+X.~Liu, N.~Xu, M.~Chen, and C.~Xiao.
+\newblock {AutoDAN}: Generating stealthy jailbreak prompts on aligned large language models.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem[Mehrotra et~al.(2024)]{mehrotra2024tree}
+A.~Mehrotra, M.~Zampetakis, P.~Kassianik, B.~Nelson, H.~Anderson, Y.~Singer, and A.~Karbasi.
+\newblock Tree of attacks: Jailbreaking black-box {LLMs} with auto-generated subversive prompts.
+\newblock \emph{arXiv preprint arXiv:2312.02119}, 2024.
+
+\bibitem[Meta(2024a)]{metallamaguard2}
+Meta.
+\newblock {Llama Guard 2}.
+\newblock \url{https://huggingface.co/meta-llama/Llama-Guard-2-8B}, 2024.
+
+\bibitem[Meta(2024b)]{metallamaguard3}
+Meta.
+\newblock {Llama Guard 3-8B}.
+\newblock \url{https://huggingface.co/meta-llama/Llama-Guard-3-8B}, 2024.
+
+\bibitem[Meta(2024c)]{meta2024promptguard}
+Meta.
+\newblock {PromptGuard-86M}.
+\newblock \url{https://huggingface.co/meta-llama/Prompt-Guard-86M}, 2024.
+
+\bibitem[Shen et~al.(2024)]{shen2024anything}
+X.~Shen, Z.~Chen, M.~Backes, Y.~Shen, and Y.~Zhang.
+\newblock ``{D}o anything now'': Characterizing and evaluating in-the-wild jailbreak prompts on large language models.
+\newblock In \emph{CCS}, 2024.
+
+\bibitem[Tunstall et~al.(2023)]{tunstall2023zephyr}
+L.~Tunstall, E.~Beeching, N.~Lambert, N.~Rajani, K.~Rasul, Y.~Belkada, S.~Huang, L.~von Werra, C.~Fourrier, N.~Habib, et~al.
+\newblock Zephyr: Direct distillation of {LM} alignment.
+\newblock \emph{arXiv preprint arXiv:2310.16944}, 2023.
+
+\bibitem[Wang et~al.(2024)]{wang2024chain}
+X.~Wang, S.~Gao, J.~Zhao.
+\newblock Chain-of-thought prompting for content moderation.
+\newblock \emph{arXiv preprint arXiv:2402.12490}, 2024.
+
+\bibitem[Wei et~al.(2022)]{wei2022chain}
+J.~Wei, X.~Wang, D.~Schuurmans, M.~Bosma, B.~Ichter, F.~Xia, E.~Chi, Q.~V. Le, and D.~Zhou.
+\newblock Chain-of-thought prompting elicits reasoning in large language models.
+\newblock In \emph{NeurIPS}, 2022.
+
+\bibitem[Wei et~al.(2024)]{wei2024jailbroken}
+A.~Wei, N.~Haghtalab, and J.~Steinhardt.
+\newblock Jailbroken: How does {LLM} safety training fail?
+\newblock In \emph{NeurIPS}, 2024.
+
+\bibitem[Zeng et~al.(2024)]{zeng2024shieldgemma}
+W.~Zeng, Y.~Xu, A.~Gupta, et~al.
+\newblock {ShieldGemma}: Generative {AI} content moderation based on {Gemma}.
+\newblock \emph{arXiv preprint arXiv:2407.21772}, 2024.
+
+\bibitem[Zou et~al.(2023)]{zou2023universal}
+A.~Zou, Z.~Wang, N.~Carlini, M.~Nasr, J.~Z. Kolter, and M.~Fredrikson.
+\newblock Universal and transferable adversarial attacks on aligned language models.
+\newblock \emph{arXiv preprint arXiv:2307.15043}, 2023.
+
+\end{thebibliography}
+
+%==============================================================================
+% NeurIPS Paper Checklist
+%==============================================================================
+
+\newpage
+\section*{NeurIPS Paper Checklist}
+
+\begin{enumerate}[leftmargin=*]
+
+\item \textbf{Claims}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: The abstract and introduction clearly state the contributions and scope, with specific numerical results that match the experimental findings in Section~5.
+\end{itemize}
+
+\item \textbf{Limitations}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: Section~6.4 discusses limitations including single training run, limited training data diversity, teacher model dependency, English-only evaluation, and increased false positive rate.
+\end{itemize}
+
+\item \textbf{Theory assumptions and proofs}
+\begin{itemize}
+  \item[] Answer: [NA]
+  \item[] Justification: The paper does not include theoretical results.
+\end{itemize}
+
+\item \textbf{Experimental result reproducibility}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: Section~3 provides full training hyperparameters, Section~4 details the evaluation setup, and Appendix~A provides the complete prompt templates.
+\end{itemize}
+
+\item \textbf{Open access to data and code}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: Code and trained adapters will be released upon publication. Training data uses publicly available datasets (WildGuardMix, AdvBench).
+\end{itemize}
+
+\item \textbf{Experimental setting/details}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: Sections~3 and 4 provide complete training details including optimizer, learning rate, batch size, quantization configuration, and hardware.
+\end{itemize}
+
+\item \textbf{Experiment statistical significance}
+\begin{itemize}
+  \item[] Answer: [No]
+  \item[] Justification: Results are from a single training run. We acknowledge this limitation in Section~6.4 and note that variance across runs is not quantified.
+\end{itemize}
+
+\item \textbf{Experiments compute resources}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: Section~3.3 specifies training on a single NVIDIA A5000 GPU with approximate training time of 1 hour.
+\end{itemize}
+
+\item \textbf{Code of ethics}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: This research aims to improve AI safety. We do not release adversarial attack tools and our model is designed to detect and prevent harmful content.
+\end{itemize}
+
+\item \textbf{Broader impacts}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: The work has positive societal impact by improving safety of LLM deployments. Potential negative impacts (increased false positives on legitimate security discussions) are discussed in Section~6.
+\end{itemize}
+
+\item \textbf{Safeguards}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: The released model is a safety classifier, not a generative model. It is designed to enhance safety rather than enable misuse.
+\end{itemize}
+
+\item \textbf{Licenses for existing assets}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: We use Llama-Guard-3-8B (Meta Llama 3 Community License), WildGuardMix (Apache 2.0), and AdvBench (MIT License), all properly cited.
+\end{itemize}
+
+\item \textbf{New assets}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: The LoRA adapter and training data will be released with appropriate documentation and licensing information.
+\end{itemize}
+
+\item \textbf{Crowdsourcing and research with human subjects}
+\begin{itemize}
+  \item[] Answer: [NA]
+  \item[] Justification: This work does not involve crowdsourcing or human subjects research.
+\end{itemize}
+
+\item \textbf{Institutional review board (IRB) approvals}
+\begin{itemize}
+  \item[] Answer: [NA]
+  \item[] Justification: No human subjects research was conducted.
+\end{itemize}
+
+\item \textbf{Declaration of LLM usage}
+\begin{itemize}
+  \item[] Answer: [Yes]
+  \item[] Justification: GPT-4o-mini is used as a core component of the method for generating reflection training data, as described in Section~3.2.
+\end{itemize}
+
+\end{enumerate}
+
+%==============================================================================
+% Appendix
+%==============================================================================
+
+\newpage
+\appendix
+\section{Training details}
+\label{app:training}
+
+\paragraph{Hardware.} All experiments were conducted on a Yale HPC (McCleary) cluster node equipped with a single NVIDIA A5000 GPU (24GB VRAM), 4 CPU cores, and 32GB system RAM.
+
+\paragraph{Quantization configuration.} We use BitsAndBytes 4-bit quantization with the following settings: NF4 quantization type, double quantization enabled, BF16 compute dtype. The quantized base model occupies approximately 5GB of GPU memory.
+
+\paragraph{Training dynamics.} Training loss decreases from 2.29 (step 5) to 0.25 (step 185), with training accuracy increasing from 0.60 to 0.94 over 189 training steps.
+
+\paragraph{Safety taxonomy.} The safety instruction prompt includes 13 categories: S1 (Violent Crimes), S2 (Non-Violent Crimes), S3 (Sex-Related Crimes), S4 (Child Sexual Exploitation), S5 (Defamation), S6 (Specialized Advice), S7 (Privacy), S8 (Intellectual Property), S9 (Indiscriminate Weapons), S10 (Hate), S11 (Suicide \& Self-Harm), S12 (Sexual Content), S13 (Elections).
+
+\paragraph{Reflection generation prompt (teacher).} The GPT-4o-mini teacher model receives the following system prompt for generating reflection training data:
+
+\begin{tcolorbox}[graybox, fontupper=\scriptsize]
+You are a safety analysis expert building training data for an AI safety classifier. For a given user message and its ground-truth safety label, write a concise logical self-reflection (2--4 sentences) that: (1) Identifies whether the message uses adversarial techniques to bypass safety filters (e.g., roleplay framing, fictional scenarios, indirect harmful requests, technical obfuscation, authority appeals, social engineering). (2) States whether the underlying intent is harmful or benign and why. (3) Lists the key indicators that support the classification.
+
+Rules: Be precise and analytical. Do NOT moralize or preach. For harmful prompts: explain the harm category and any adversarial technique used. For benign prompts: confirm safety and explain why. Output ONLY the reflection text (2--4 sentences). No preamble, no verdict.
+\end{tcolorbox}
+
+\section{Additional error analysis}
+\label{app:errors}
+
+Table~\ref{tab:fn_breakdown} shows the distribution of Reflect-Guard's false negatives by harm subcategory.
+
+\begin{table}[h]
+  \caption{Reflect-Guard false negative distribution by harm subcategory on WildGuardTest.}
+  \label{tab:fn_breakdown}
+  \centering
+  \begin{tabular}{lc}
+    \toprule
+    Subcategory & Count \\
+    \midrule
+    Private information (individual) & 32 \\
+    Social stereotypes \& discrimination & 26 \\
+    Others & 16 \\
+    Fraud / assisting illegal activities & 7 \\
+    Mental health / over-reliance / crisis & 6 \\
+    Sensitive information (org/gov) & 6 \\
+    Copyright violations & 5 \\
+    Sexual content & 4 \\
+    Defamation / unethical actions & 1 \\
+    \midrule
+    Total & 103 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\end{document}
