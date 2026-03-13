@@ -1,0 +1,27 @@
+==========================================================================================
+ABLATION STUDY: Isolating Contributions of Reflection and SFT
+==========================================================================================
+
+--- WildGuardTest Results ---
+Condition                        Acc    Prec     Rec      F1  Adv-Rec   Adv-F1
+------------------------------------------------------------------------------
+0. Clean Baseline              0.825   0.919   0.663   0.770    0.513    0.639
+A. Prompted Reflection         0.819   0.916   0.651   0.761    0.487    0.616
+B. SFT Labels Only             0.877   0.868   0.853   0.860    0.845    0.816
+C. Blind Reflections           0.856   0.847   0.825   0.836    0.848    0.795
+D. Full Reflect-Guard          0.856   0.821   0.863   0.842    0.921    0.802
+
+--- JailbreakBench Detection Rate ---
+Condition                      Detected   Total       DR
+--------------------------------------------------------
+0. Clean Baseline                   253     282    89.7%
+A. Prompted Reflection              253     282    89.7%
+B. SFT Labels Only                  282     282   100.0%
+C. Blind Reflections                279     282    98.9%
+D. Full Reflect-Guard               277     282    98.2%
+
+--- Ablation Delta Analysis ---
+Total F1 gain (D vs 0):    +0.0712
+SFT-only gain (B vs 0):    +0.0898  (126% of total)
+Reflection gain (D vs B):  -0.0186  (-26% of total)
+GT label gain (D vs C):    +0.0056

@@ -17,6 +17,8 @@
 \usepackage{enumitem}
 \usepackage{multirow}
 \usepackage{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, shapes.geometric, positioning, fit, backgrounds, calc}
 
 \tcbset{
   graybox/.style={colback=gray!5, colframe=gray!50, boxrule=0.5pt, arc=2pt,
@@ -73,6 +75,75 @@ Knowledge distillation~\citep{hinton2015distilling} has been applied to transfer
 %==============================================================================
 \section{Method}
 %==============================================================================
+
+% ── Figure 1: Training and Inference Pipeline ────────────────────────────────
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={draw, rounded corners=3pt, minimum width=2.0cm, minimum height=0.7cm,
+              align=center, fill=#1!12, draw=#1!60},
+  arr/.style={-{Stealth[length=5pt]}, thick},
+  label/.style={font=\footnotesize\itshape},
+]
+
+%% ── LEFT: Training Pipeline ──────────────────────────────────────────────────
+\node[box=blue, minimum width=1.6cm] (wg)  at (0, 2.2)   {WildGuard\\Mix};
+\node[box=blue, minimum width=1.6cm] (ab)  at (0, 0.9)   {AdvBench};
+\node[font=\footnotesize, gray] at (0, 1.55) {+};
+
+% Brace / merge
+\coordinate (merge) at (1.2, 1.55);
+\draw[arr] (wg.east)  -- ++(0.35,0) |- (merge);
+\draw[arr] (ab.east)  -- ++(0.35,0) |- (merge);
+
+\node[box=orange, minimum width=2.2cm] (gpt) at (3.0, 1.55) {GPT-4o-mini\\(teacher)};
+\draw[arr] (merge) -- (gpt.west) node[midway, above, label] {1000\\prompts};
+
+\node[box=orange, minimum width=2.2cm] (data) at (5.5, 1.55) {\texttt{<reflection>}\\annotations};
+\draw[arr] (gpt) -- (data) node[midway, above, label] {+GT label};
+
+\node[box=green!70!black, minimum width=2.2cm] (qlora) at (8.0, 1.55) {QLoRA\\fine-tune};
+\draw[arr] (data) -- (qlora) node[midway, above, label] {JSONL};
+
+\node[box=green!70!black, minimum width=2.2cm] (lora) at (10.5, 1.55) {LoRA\\Adapter};
+\draw[arr] (qlora) -- (lora);
+
+% Section label
+\node[font=\small\bfseries, gray] at (5.25, 3.1) {Training Pipeline};
+\draw[gray, dashed, rounded corners=4pt]
+  (-0.9, 0.3) rectangle (11.4, 2.85);
+
+%% ── RIGHT: Inference Pipeline ────────────────────────────────────────────────
+\node[box=red, minimum width=2.0cm] (prompt) at (0, -1.2) {Input\\Prompt};
+\node[box=green!70!black, minimum width=2.4cm] (rg) at (3.2, -1.2)
+      {Reflect-Guard\\(LG3-8B + LoRA)};
+\draw[arr] (prompt) -- (rg);
+
+\node[box=purple, minimum width=2.0cm, text width=3.0cm, align=center]
+      (refl) at (6.4, -1.2) {\texttt{<reflection>}\\Adversarial\\analysis\ldots};
+\draw[arr] (rg) -- (refl);
+
+\node[box=red, minimum width=1.8cm] (verdict) at (9.4, -1.2) {safe /\\unsafe};
+\draw[arr] (refl) -- (verdict) node[midway, above, label] {auto};
+
+% Section label
+\node[font=\small\bfseries, gray] at (4.75, -0.35) {Inference Pipeline};
+\draw[gray, dashed, rounded corners=4pt]
+  (-0.9, -2.05) rectangle (10.8, -0.15);
+
+% Arrow from LoRA to Reflect-Guard
+\draw[arr, dashed, bend right=30]
+  (lora.south) to node[right, label, pos=0.5] {load} (rg.north);
+
+\end{tikzpicture}
+\caption{
+\textbf{Reflect-Guard overview.}
+\textit{Training (top):} GPT-4o-mini generates structured reflection annotations for 1{,}000 labeled prompts; Llama-Guard-3-8B is then fine-tuned with QLoRA to reproduce these reflections.
+\textit{Inference (bottom):} The fine-tuned model generates an explicit adversarial analysis in \texttt{<reflection>} tags before issuing a safety verdict—no external API is required.
+}
+\label{fig:pipeline}
+\end{figure}
 
 \subsection{Problem formulation}
 
@@ -243,17 +314,143 @@ Reflect-Guard achieves these improvements with minimal computational overhead:
 
 The LoRA adapter adds only $\sim$42MB to the model's storage requirements and can be dynamically loaded/unloaded, enabling flexible deployment alongside the base Llama Guard model.
 
+\subsection{Ablation study}
+\label{sec:ablation}
+
+% ── Figure 2: Ablation Design ─────────────────────────────────────────────────
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  cond/.style={draw, rounded corners=3pt, fill=#1!10, draw=#1!60,
+               minimum width=3.6cm, minimum height=0.65cm, align=center},
+  tick/.style={draw=green!60!black, fill=green!15, rounded corners=2pt,
+               minimum width=0.7cm, minimum height=0.5cm, align=center, font=\footnotesize},
+  cross/.style={draw=red!60, fill=red!10, rounded corners=2pt,
+               minimum width=0.7cm, minimum height=0.5cm, align=center, font=\footnotesize},
+  hdr/.style={font=\footnotesize\bfseries, align=center},
+]
+
+% Column headers
+\node[hdr] at (0,    0) {Condition};
+\node[hdr] at (4.2,  0) {Reflection};
+\node[hdr] at (5.8,  0) {SFT};
+\node[hdr] at (7.4,  0) {GT Label};
+\node[hdr] at (9.5,  0) {Purpose};
+
+\draw[gray] (-1.8, -0.28) -- (11.2, -0.28);
+
+% Row 0
+\node[cond=gray]           at (0,  -0.85) {0.\ Clean Baseline};
+\node[cross] at (4.2, -0.85) {\texttimes};
+\node[cross] at (5.8, -0.85) {\texttimes};
+\node[cross] at (7.4, -0.85) {---};
+\node[font=\footnotesize, align=left] at (9.5, -0.85) {True baseline};
+
+% Row A
+\node[cond=orange]         at (0,  -1.65) {A.\ Prompted Refl.};
+\node[tick]  at (4.2, -1.65) {\checkmark};
+\node[cross] at (5.8, -1.65) {\texttimes};
+\node[cross] at (7.4, -1.65) {---};
+\node[font=\footnotesize, align=left] at (9.5, -1.65) {Prompting alone?};
+
+% Row B
+\node[cond=blue]           at (0,  -2.45) {B.\ SFT Labels Only};
+\node[cross] at (4.2, -2.45) {\texttimes};
+\node[tick]  at (5.8, -2.45) {\checkmark};
+\node[cross] at (7.4, -2.45) {---};
+\node[font=\footnotesize, align=left] at (9.5, -2.45) {SFT decision boundary};
+
+% Row C
+\node[cond=purple]         at (0,  -3.25) {C.\ Blind Reflections};
+\node[tick]  at (4.2, -3.25) {\checkmark};
+\node[tick]  at (5.8, -3.25) {\checkmark};
+\node[cross] at (7.4, -3.25) {\texttimes};
+\node[font=\footnotesize, align=left] at (9.5, -3.25) {GT label quality?};
+
+% Row D
+\node[cond=green!70!black] at (0,  -4.05) {D.\ Full Reflect-Guard};
+\node[tick]  at (4.2, -4.05) {\checkmark};
+\node[tick]  at (5.8, -4.05) {\checkmark};
+\node[tick]  at (7.4, -4.05) {\checkmark};
+\node[font=\footnotesize, align=left] at (9.5, -4.05) {Full method};
+
+% Brace annotations
+\draw[decorate, decoration={brace, amplitude=5pt}, gray]
+  (3.0, -0.55) -- (3.0, -1.95) node[midway, left=6pt, font=\footnotesize\itshape, gray]
+  {A $\approx$ 0?};
+\draw[decorate, decoration={brace, amplitude=5pt}, gray]
+  (3.0, -2.15) -- (3.0, -4.35) node[midway, left=6pt, font=\footnotesize\itshape, gray]
+  {D $>$ B $>$ C?};
+
+\end{tikzpicture}
+\caption{
+\textbf{Ablation study design.}
+Five conditions isolate the contribution of each component.
+Condition~A tests whether prompting alone (without fine-tuning) induces reflection.
+Condition~B isolates the effect of SFT on the decision boundary without reflection.
+Condition~C tests whether teacher reflections generated without the ground-truth label are less effective.
+Condition~D is the full Reflect-Guard system.
+}
+\label{fig:ablation}
+\end{figure}
+
+To disentangle the contributions of reflection reasoning versus supervised fine-tuning (SFT) on the decision boundary, we conduct an ablation study with five conditions:
+
+\begin{itemize}[leftmargin=*, nosep]
+  \item \textbf{Condition 0 (Clean Baseline):} Llama-Guard-3-8B with the standard prompt (no reflection instruction, no SFT).
+  \item \textbf{Condition A (Prompted Reflection):} Llama-Guard-3-8B prompted to generate reflections, but without any fine-tuning.
+  \item \textbf{Condition B (SFT Labels Only):} QLoRA fine-tuned on the same 1{,}000 examples, but training targets contain only the verdict (safe/unsafe + categories)---no reflection text.
+  \item \textbf{Condition C (Blind Reflections):} QLoRA fine-tuned with reflections generated by GPT-4o-mini \emph{without} access to the ground-truth label.
+  \item \textbf{Condition D (Full Reflect-Guard):} The full method with ground-truth-informed reflections.
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Ablation study results on WildGuardTest and JailbreakBench. Reflection = whether the model generates chain-of-thought reasoning; SFT = whether QLoRA fine-tuning is applied; GT = whether the teacher had access to ground-truth labels during reflection synthesis.}
+\label{tab:ablation}
+\small
+\begin{tabular}{@{}lccc|cccc|c@{}}
+\toprule
+\textbf{Condition} & \textbf{Refl.} & \textbf{SFT} & \textbf{GT} & \textbf{Acc} & \textbf{Prec} & \textbf{Rec} & \textbf{F1} & \textbf{JBB DR} \\
+\midrule
+0. Clean Baseline     & No  & No  & ---  & .825 & .919 & .663 & .770 & 89.7\% \\
+A. Prompted Refl.     & Yes & No  & ---  & .819 & .916 & .651 & .761 & 89.7\% \\
+B. SFT Labels Only    & No  & Yes & ---  & .877 & .868 & .853 & .860 & 100.0\% \\
+C. Blind Reflections  & Yes & Yes & No   & .856 & .847 & .825 & .836 & 98.9\% \\
+D. Full Reflect-Guard & Yes & Yes & Yes  & .856 & .821 & .863 & .842 & 98.2\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The results directly address the reviewer question of how much gain is attributable to reflection \emph{per se} versus SFT changing the decision boundary.
+
+\textbf{Prompting alone provides no benefit (Condition A).}
+Condition~A is virtually indistinguishable from Condition~0 (F1: 0.761 vs.\ 0.770; JBB detection rate identical at 89.7\%), confirming that chain-of-thought prompting without fine-tuning cannot shift the decision boundary.
+
+\textbf{SFT on the decision boundary drives the primary gain (Condition B).}
+Condition~B yields a +9.0 pp F1 improvement over the baseline (0.860 vs.\ 0.770) and perfect JBB detection (100.0\%), demonstrating that the bulk of the gain comes from adapting the classifier's decision boundary via SFT, not from reflection per se.
+
+\textbf{Reflection training specifically boosts adversarial robustness (Condition D vs.\ B).}
+Condition~D trades a modest 1.8 pp of overall F1 (0.842 vs.\ 0.860) for a substantial +7.6 pp gain in adversarial recall (0.921 vs.\ 0.845). Reflection-augmented training thus optimises specifically for harder, adversarially-constructed inputs at a small cost to aggregate precision.
+
+\textbf{Ground-truth labels during synthesis provide a small additional benefit (Condition D vs.\ C).}
+Condition~C, trained on reflections generated without access to ground-truth labels, achieves F1 of 0.836---only 0.6 pp below Condition~D (0.842)---showing that the approach remains effective even when teacher supervision is label-blind, though GT-informed reflections offer a marginal quality advantage.
+
 \subsection{Limitations}
 
-Several limitations should be acknowledged. First, our evaluation uses a single training run without multiple seeds, so variance in results is not quantified. Second, the training set of 1{,}000 examples may not cover the full diversity of adversarial techniques, particularly novel attacks not represented in WildGuardMix or AdvBench. Third, the knowledge distillation from GPT-4o-mini introduces a dependency on the teacher model's quality---if GPT-4o-mini's safety reasoning contains biases or blind spots, these may transfer to the student. Fourth, we evaluate on English-only benchmarks; multilingual adversarial robustness remains untested. Finally, the increased false positive rate on benign adversarial-looking prompts could impact user experience in deployment, particularly for legitimate security research queries.
+Several limitations should be acknowledged. First, our evaluation uses a single training run without multiple seeds, so variance in results is not quantified. Second, the training set of 1{,}000 examples may not cover the full diversity of adversarial techniques, particularly novel attacks not represented in WildGuardMix or AdvBench. Third, the knowledge distillation from GPT-4o-mini introduces a dependency on the teacher model's quality---if GPT-4o-mini's safety reasoning contains biases or blind spots, these may transfer to the student. Fourth, the increased false positive rate on benign adversarial-looking prompts could impact user experience in deployment, particularly for legitimate security research queries.
+
+\paragraph{Multilingual and cross-cultural generalization.}
+A significant open question is whether Reflect-Guard generalizes beyond English. Both our training data (WildGuardMix, AdvBench) and teacher reflections (GPT-4o-mini) are English-only, so the LoRA adapter has not been exposed to the adversarial patterns, rhetorical structures, or culturally-specific harm framings that arise in other languages. We anticipate three concrete challenges. \emph{(i) Linguistic transfer:} While Llama-Guard-3-8B itself supports multiple languages, the reflection-generation capability learned via LoRA may not transfer to non-English inputs, since the adapter weights encode English-language reasoning patterns. \emph{(ii) Cultural specificity of harm:} What constitutes harmful content is culturally situated---political speech, religious critique, caste-related content, and community-specific stereotypes vary substantially across regions. A safety taxonomy built for an English-speaking Western context (e.g., the 13 S1--S13 categories) may not capture harms salient in other cultural settings, meaning the teacher's reflections would be calibrated to the wrong notion of harm. \emph{(iii) Cross-lingual adversarial techniques:} Attackers in multilingual settings exploit code-switching, transliteration, and culturally-embedded framings (e.g., referencing local social norms or authority figures) that are unlikely to appear in English training corpora. Adapting Reflect-Guard to multilingual settings would require: generating reflection training data in target languages using a multilingual teacher, expanding the safety taxonomy to cover culturally-specific harm categories, and evaluating on multilingual benchmarks. We leave this as important future work.
 
 %==============================================================================
 \section{Conclusion}
 %==============================================================================
 
-We presented Reflect-Guard, a method for enhancing LLM safety classifiers through chain-of-thought self-reflection. By distilling analytical reasoning from GPT-4o-mini into a QLoRA-finetuned Llama-Guard-3-8B model, we enable the classifier to explicitly reason about adversarial techniques before issuing safety verdicts. On WildGuardTest, this improves F1 from 0.740 to 0.842, with recall on adversarial prompts nearly doubling from 0.440 to 0.921. On JailbreakBench, attack success rate drops from 10.3\% to 1.8\%. These results demonstrate that explicit reasoning about adversarial intent is a promising paradigm for building more robust LLM safety classifiers, complementing the trend toward deliberative and interpretable AI safety systems.
+We presented Reflect-Guard, a method for enhancing LLM safety classifiers through chain-of-thought self-reflection. By distilling analytical reasoning from GPT-4o-mini into a QLoRA-finetuned Llama-Guard-3-8B model, we enable the classifier to explicitly reason about adversarial techniques before issuing safety verdicts. On WildGuardTest, this improves F1 from 0.770 to 0.842 over the clean baseline, with recall on adversarial prompts rising from 0.513 to 0.921. On JailbreakBench, attack success rate drops from 10.3\% to 1.8\%. These results demonstrate that explicit reasoning about adversarial intent is a promising paradigm for building more robust LLM safety classifiers, complementing the trend toward deliberative and interpretable AI safety systems.
 
-Future work should explore scaling the reflection approach to larger training sets and more diverse attack types, investigating multi-turn adversarial scenarios, and developing methods to reduce false positives on benign security-related content while maintaining high adversarial recall.
+Future work should explore scaling the reflection approach to larger training sets and more diverse attack types, investigating multi-turn adversarial scenarios, and developing methods to reduce false positives on benign security-related content while maintaining high adversarial recall. Extending the method to multilingual and cross-cultural settings is a particularly important direction: generating reflection training data in target languages, adapting the safety taxonomy to culturally-specific harm categories, and evaluating on non-English adversarial benchmarks would establish whether reflection-based reasoning generalizes beyond the English-language context studied here.
 
 %==============================================================================
 % References

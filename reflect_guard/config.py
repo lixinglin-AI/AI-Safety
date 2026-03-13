@@ -10,6 +10,14 @@ DATASET_PATH    = os.path.join(BASE_DIR, "reflect_guard_train.jsonl")
 OUTPUT_DIR      = os.path.join(BASE_DIR, "checkpoints")
 ADAPTER_SAVE_PATH = os.path.join(BASE_DIR, "reflect_guard_lora")
 
+# ── Ablation paths ────────────────────────────────────────────────────────────
+ABLATION_B_DATASET_PATH = os.path.join(BASE_DIR, "ablation_b_train.jsonl")
+ABLATION_C_DATASET_PATH = os.path.join(BASE_DIR, "ablation_c_train.jsonl")
+ABLATION_B_ADAPTER_PATH = os.path.join(BASE_DIR, "ablation_b_lora")
+ABLATION_C_ADAPTER_PATH = os.path.join(BASE_DIR, "ablation_c_lora")
+ABLATION_B_CKPT_DIR     = os.path.join(BASE_DIR, "ablation_b_checkpoints")
+ABLATION_C_CKPT_DIR     = os.path.join(BASE_DIR, "ablation_c_checkpoints")
+
 # ── Model ──────────────────────────────────────────────────────────────────────
 MODEL_ID = "meta-llama/Llama-Guard-3-8B"
 
@@ -56,6 +64,17 @@ LLAMAGUARD_COT_INSTRUCTION = (
     " - If unsafe, a second line must include a comma-separated list of violated categories."
 )
 
+LLAMAGUARD_STANDARD_INSTRUCTION = (
+    "Task: Check if there is unsafe content in 'User' messages in conversations "
+    "according our safety policy with the below categories.\n\n"
+    "<BEGIN UNSAFE CONTENT CATEGORIES>\n" + SAFETY_CATEGORIES + "\n"
+    "<END UNSAFE CONTENT CATEGORIES>\n\n"
+    "<BEGIN CONVERSATION>\nUser: {prompt}\n\n<END CONVERSATION>\n\n"
+    "Provide your safety assessment for ONLY THE LAST User message in the above conversation:\n"
+    " - The first line must read 'safe' or 'unsafe'.\n"
+    " - If unsafe, a second line must include a comma-separated list of violated categories."
+)
+
 SYNTHESIS_SYSTEM = (
     "You are a safety analysis expert building training data for an AI safety classifier. "
     "For a given user message and its ground-truth safety label, write a concise logical "
@@ -65,6 +84,22 @@ SYNTHESIS_SYSTEM = (
     "obfuscation, authority appeals, social engineering).\n"
     "2. States whether the underlying intent is harmful or benign and why.\n"
     "3. Lists the key indicators that support the classification.\n\n"
+    "Rules:\n"
+    "- Be precise and analytical. Do NOT moralize or preach.\n"
+    "- For harmful prompts: explain the harm category and any adversarial technique used.\n"
+    "- For benign prompts: confirm safety and explain why.\n"
+    "- Output ONLY the reflection text (2-4 sentences). No preamble, no verdict."
+)
+
+SYNTHESIS_SYSTEM_BLIND = (
+    "You are a safety analysis expert building training data for an AI safety classifier. "
+    "For a given user message, determine whether it is safe or unsafe and write a concise "
+    "logical self-reflection (2-4 sentences) that:\n"
+    "1. Identifies whether the message uses adversarial techniques to bypass safety filters "
+    "(e.g. roleplay framing, fictional scenarios, indirect harmful requests, technical "
+    "obfuscation, authority appeals, social engineering).\n"
+    "2. States whether the underlying intent is harmful or benign and why.\n"
+    "3. Lists the key indicators that support your classification.\n\n"
     "Rules:\n"
     "- Be precise and analytical. Do NOT moralize or preach.\n"
     "- For harmful prompts: explain the harm category and any adversarial technique used.\n"

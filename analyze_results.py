@@ -32,7 +32,7 @@ from sklearn.metrics import (
     recall_score,
 )
 
-from config import RESULTS_DIR
+RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
 
 WILDGUARD_PATH = os.path.join(RESULTS_DIR, "wildguard_results.json")
 JBB_PATH = os.path.join(RESULTS_DIR, "jailbreakbench_results.json")
@@ -276,11 +276,111 @@ def run_comparison(report_path: str) -> None:
     print(f"\nComparison report saved to {report_path}")
 
 
+ABLATION_CONDITIONS = [
+    ("0. Clean Baseline",     "clean_baseline"),
+    ("A. Prompted Reflection","ablation_a"),
+    ("B. SFT Labels Only",   "ablation_b"),
+    ("C. Blind Reflections",  "ablation_c"),
+    ("D. Full Reflect-Guard", "reflect_guard"),
+]
+
+ABLATION_REPORT_PATH = os.path.join(RESULTS_DIR, "ablation_report.txt")
+
+
+def run_ablation(report_path: str) -> None:
+    lines = []
+    lines.append("=" * 90)
+    lines.append("ABLATION STUDY: Isolating Contributions of Reflection and SFT")
+    lines.append("=" * 90)
+
+    # ── WildGuardTest table ──
+    lines.append("\n--- WildGuardTest Results ---")
+    header = f"{'Condition':<28} {'Acc':>7} {'Prec':>7} {'Rec':>7} {'F1':>7} {'Adv-Rec':>8} {'Adv-F1':>8}"
+    lines.append(header)
+    lines.append("-" * len(header))
+
+    for label, suffix in ABLATION_CONDITIONS:
+        wg_path = os.path.join(RESULTS_DIR, f"wildguard_results_{suffix}.json")
+        if not os.path.exists(wg_path):
+            lines.append(f"{label:<28} {'(missing)':>7}")
+            continue
+        data = load_json(wg_path)
+        m = _metrics_dict(data)
+        # Adversarial subset
+        adv = [r for r in data if r.get("adversarial") is True]
+        if adv:
+            am = _metrics_dict(adv)
+            adv_rec = f"{am['recall']:.3f}"
+            adv_f1 = f"{am['f1']:.3f}"
+        else:
+            adv_rec = "N/A"
+            adv_f1 = "N/A"
+        lines.append(
+            f"{label:<28} {m['accuracy']:>7.3f} {m['precision']:>7.3f} "
+            f"{m['recall']:>7.3f} {m['f1']:>7.3f} {adv_rec:>8} {adv_f1:>8}"
+        )
+
+    # ── JailbreakBench table ──
+    lines.append("\n--- JailbreakBench Detection Rate ---")
+    jbb_header = f"{'Condition':<28} {'Detected':>10} {'Total':>7} {'DR':>8}"
+    lines.append(jbb_header)
+    lines.append("-" * len(jbb_header))
+
+    for label, suffix in ABLATION_CONDITIONS:
+        jbb_path = os.path.join(RESULTS_DIR, f"jailbreakbench_results_{suffix}.json")
+        if not os.path.exists(jbb_path):
+            lines.append(f"{label:<28} {'(missing)':>10}")
+            continue
+        data = load_json(jbb_path)
+        detected = sum(1 for r in data if r["predicted"] == "harmful")
+        total = len(data)
+        dr = detected / total if total else 0
+        lines.append(f"{label:<28} {detected:>10} {total:>7} {dr:>8.1%}")
+
+    # ── Delta analysis ──
+    lines.append("\n--- Ablation Delta Analysis ---")
+    # Try to compute deltas relative to clean baseline
+    wg_base_path = os.path.join(RESULTS_DIR, "wildguard_results_clean_baseline.json")
+    wg_full_path = os.path.join(RESULTS_DIR, "wildguard_results_reflect_guard.json")
+    if os.path.exists(wg_base_path) and os.path.exists(wg_full_path):
+        base_m = _metrics_dict(load_json(wg_base_path))
+        full_m = _metrics_dict(load_json(wg_full_path))
+        total_gain = full_m["f1"] - base_m["f1"]
+        lines.append(f"Total F1 gain (D vs 0):    {total_gain:+.4f}")
+
+        wg_b_path = os.path.join(RESULTS_DIR, "wildguard_results_ablation_b.json")
+        if os.path.exists(wg_b_path):
+            b_m = _metrics_dict(load_json(wg_b_path))
+            sft_gain = b_m["f1"] - base_m["f1"]
+            reflect_gain = full_m["f1"] - b_m["f1"]
+            lines.append(f"SFT-only gain (B vs 0):    {sft_gain:+.4f}  ({100*sft_gain/total_gain:.0f}% of total)" if total_gain > 0 else f"SFT-only gain (B vs 0):    {sft_gain:+.4f}")
+            lines.append(f"Reflection gain (D vs B):  {reflect_gain:+.4f}  ({100*reflect_gain/total_gain:.0f}% of total)" if total_gain > 0 else f"Reflection gain (D vs B):  {reflect_gain:+.4f}")
+
+        wg_c_path = os.path.join(RESULTS_DIR, "wildguard_results_ablation_c.json")
+        if os.path.exists(wg_c_path):
+            c_m = _metrics_dict(load_json(wg_c_path))
+            gt_gain = full_m["f1"] - c_m["f1"]
+            lines.append(f"GT label gain (D vs C):    {gt_gain:+.4f}")
+
+    report = "\n".join(lines)
+    print(report)
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    with open(report_path, "w") as f:
+        f.write(report + "\n")
+    print(f"\nAblation report saved to {report_path}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--compare", action="store_true",
                         help="Compare baseline vs Reflect-Guard results.")
+    parser.add_argument("--ablation", action="store_true",
+                        help="Generate ablation study comparison report.")
     args = parser.parse_args()
+
+    if args.ablation:
+        run_ablation(ABLATION_REPORT_PATH)
+        return
 
     if args.compare:
         run_comparison(COMPARISON_REPORT_PATH)
