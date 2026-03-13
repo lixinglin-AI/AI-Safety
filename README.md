@@ -1,6 +1,6 @@
 # Reflect-Guard: Enhancing LLM Safeguards against Adversarial Prompts via Logical Self-Reflection
 
-> **NeurIPS 2025 submission** — Anonymous Author(s)
+> **NeurIPS 2026 submission** — Anonymous Author(s)
 
 Reflect-Guard augments LLM-based safety classifiers with chain-of-thought self-reflection via parameter-efficient fine-tuning. By distilling analytical reasoning from GPT-4o-mini into Llama-Guard-3-8B through QLoRA, the model learns to explicitly reason about adversarial intent before issuing a safety verdict.
 
