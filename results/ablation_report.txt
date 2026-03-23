@@ -2,14 +2,32 @@
 ABLATION STUDY: Isolating Contributions of Reflection and SFT
 ==========================================================================================
 
---- WildGuardTest Results ---
-Condition                        Acc    Prec     Rec      F1  Adv-Rec   Adv-F1
-------------------------------------------------------------------------------
-0. Clean Baseline              0.825   0.919   0.663   0.770    0.513    0.639
-A. Prompted Reflection         0.819   0.916   0.651   0.761    0.487    0.616
-B. SFT Labels Only             0.877   0.868   0.853   0.860    0.845    0.816
-C. Blind Reflections           0.856   0.847   0.825   0.836    0.848    0.795
-D. Full Reflect-Guard          0.856   0.821   0.863   0.842    0.921    0.802
+--- WildGuardTest Results (Overall) ---
+Condition                       Acc   Prec    Rec     F1     F2
+---------------------------------------------------------------
+0. Clean Baseline             0.825  0.919  0.663  0.770  0.702
+A. Prompted Reflection        0.819  0.916  0.651  0.761  0.691
+B. SFT Labels Only            0.877  0.868  0.853  0.860  0.856
+C. Blind Reflections          0.856  0.847  0.825  0.836  0.829
+D. Full Reflect-Guard         0.856  0.821  0.863  0.842  0.855
+
+--- WildGuardTest: Adversarial Subset ---
+Condition                      Prec    Rec     F1     F2
+--------------------------------------------------------
+0. Clean Baseline             0.845  0.513  0.639  0.557
+A. Prompted Reflection        0.838  0.487  0.616  0.531
+B. SFT Labels Only            0.789  0.845  0.816  0.833
+C. Blind Reflections          0.749  0.848  0.795  0.826
+D. Full Reflect-Guard         0.710  0.921  0.802  0.869
+
+--- WildGuardTest: Non-Adversarial Subset ---
+Condition                      Prec    Rec     F1     F2
+--------------------------------------------------------
+0. Clean Baseline             0.964  0.787  0.867  0.817
+A. Prompted Reflection        0.962  0.787  0.866  0.817
+B. SFT Labels Only            0.944  0.860  0.900  0.875
+C. Blind Reflections          0.957  0.806  0.875  0.833
+D. Full Reflect-Guard         0.960  0.816  0.882  0.841
 
 --- JailbreakBench Detection Rate ---
 Condition                      Detected   Total       DR
