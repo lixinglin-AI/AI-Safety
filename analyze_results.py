@@ -28,6 +28,7 @@ from sklearn.metrics import (
     classification_report,
     confusion_matrix,
     f1_score,
+    fbeta_score,
     precision_score,
     recall_score,
 )
@@ -158,6 +159,7 @@ def _metrics_dict(results: list[dict]) -> dict:
         "precision": precision_score(y_true, y_pred, pos_label="harmful", zero_division=0),
         "recall":    recall_score(y_true, y_pred, pos_label="harmful", zero_division=0),
         "f1":        f1_score(y_true, y_pred, pos_label="harmful", zero_division=0),
+        "f2":        fbeta_score(y_true, y_pred, beta=2, pos_label="harmful", zero_division=0),
     }
 
 
@@ -294,31 +296,63 @@ def run_ablation(report_path: str) -> None:
     lines.append("=" * 90)
 
     # ── WildGuardTest table ──
-    lines.append("\n--- WildGuardTest Results ---")
-    header = f"{'Condition':<28} {'Acc':>7} {'Prec':>7} {'Rec':>7} {'F1':>7} {'Adv-Rec':>8} {'Adv-F1':>8}"
+    lines.append("\n--- WildGuardTest Results (Overall) ---")
+    header = f"{'Condition':<28} {'Acc':>6} {'Prec':>6} {'Rec':>6} {'F1':>6} {'F2':>6}"
     lines.append(header)
     lines.append("-" * len(header))
 
+    condition_data = {}
     for label, suffix in ABLATION_CONDITIONS:
         wg_path = os.path.join(RESULTS_DIR, f"wildguard_results_{suffix}.json")
         if not os.path.exists(wg_path):
-            lines.append(f"{label:<28} {'(missing)':>7}")
+            lines.append(f"{label:<28} {'(missing)':>6}")
             continue
         data = load_json(wg_path)
+        condition_data[suffix] = data
         m = _metrics_dict(data)
-        # Adversarial subset
+        lines.append(
+            f"{label:<28} {m['accuracy']:>6.3f} {m['precision']:>6.3f} "
+            f"{m['recall']:>6.3f} {m['f1']:>6.3f} {m['f2']:>6.3f}"
+        )
+
+    # ── Adversarial subset breakdown ──
+    lines.append("\n--- WildGuardTest: Adversarial Subset ---")
+    adv_header = f"{'Condition':<28} {'Prec':>6} {'Rec':>6} {'F1':>6} {'F2':>6}"
+    lines.append(adv_header)
+    lines.append("-" * len(adv_header))
+    for label, suffix in ABLATION_CONDITIONS:
+        data = condition_data.get(suffix)
+        if data is None:
+            lines.append(f"{label:<28} {'(missing)':>6}")
+            continue
         adv = [r for r in data if r.get("adversarial") is True]
         if adv:
             am = _metrics_dict(adv)
-            adv_rec = f"{am['recall']:.3f}"
-            adv_f1 = f"{am['f1']:.3f}"
+            lines.append(
+                f"{label:<28} {am['precision']:>6.3f} {am['recall']:>6.3f} "
+                f"{am['f1']:>6.3f} {am['f2']:>6.3f}"
+            )
         else:
-            adv_rec = "N/A"
-            adv_f1 = "N/A"
-        lines.append(
-            f"{label:<28} {m['accuracy']:>7.3f} {m['precision']:>7.3f} "
-            f"{m['recall']:>7.3f} {m['f1']:>7.3f} {adv_rec:>8} {adv_f1:>8}"
-        )
+            lines.append(f"{label:<28} {'N/A':>6}")
+
+    # ── Non-adversarial subset breakdown ──
+    lines.append("\n--- WildGuardTest: Non-Adversarial Subset ---")
+    lines.append(adv_header)
+    lines.append("-" * len(adv_header))
+    for label, suffix in ABLATION_CONDITIONS:
+        data = condition_data.get(suffix)
+        if data is None:
+            lines.append(f"{label:<28} {'(missing)':>6}")
+            continue
+        non_adv = [r for r in data if r.get("adversarial") is False]
+        if non_adv:
+            nm = _metrics_dict(non_adv)
+            lines.append(
+                f"{label:<28} {nm['precision']:>6.3f} {nm['recall']:>6.3f} "
+                f"{nm['f1']:>6.3f} {nm['f2']:>6.3f}"
+            )
+        else:
+            lines.append(f"{label:<28} {'N/A':>6}")
 
     # ── JailbreakBench table ──
     lines.append("\n--- JailbreakBench Detection Rate ---")

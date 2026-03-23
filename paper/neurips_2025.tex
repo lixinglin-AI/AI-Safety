@@ -34,7 +34,7 @@
 \maketitle
 
 \begin{abstract}
-Large language model (LLM) safety classifiers such as Llama Guard are effective at detecting overtly harmful prompts but remain vulnerable to adversarial jailbreak attacks that disguise malicious intent through role-play scenarios, fictional framing, and indirect requests. We present \textbf{Reflect-Guard}, a method that augments LLM-based safety classifiers with chain-of-thought self-reflection capabilities through parameter-efficient fine-tuning. Our approach distills analytical reasoning from GPT-4o-mini into structured reflection annotations, then trains Llama-Guard-3-8B via QLoRA to generate logical self-reflections before issuing safety verdicts. Using only 1{,}000 training examples and updating just 0.5\% of model parameters ($\sim$42M), Reflect-Guard achieves substantial improvements on two challenging benchmarks. On WildGuardTest, F1 score improves from 0.740 to 0.842 (+10.1pp), with recall on adversarial prompts increasing from 0.440 to 0.921 (+48.1pp). On JailbreakBench, the attack success rate drops from 10.3\% to 1.8\%, representing an 82.5\% relative reduction. These gains are especially pronounced on adversarial inputs, where the explicit reasoning step enables the model to see through obfuscation techniques that defeat standard pattern-matching approaches. Our results demonstrate that teaching safety classifiers to reason about adversarial intent, rather than simply classify surface patterns, is a promising direction for robust LLM safety.
+Large language model (LLM) safety classifiers such as Llama Guard are effective at detecting overtly harmful prompts but remain vulnerable to adversarial jailbreak attacks that disguise malicious intent through role-play scenarios, fictional framing, and indirect requests. We present \textbf{Reflect-Guard}, a method that augments LLM-based safety classifiers with chain-of-thought self-reflection capabilities through parameter-efficient fine-tuning. Our approach distills analytical reasoning from GPT-4o-mini into structured reflection annotations, then trains Llama-Guard-3-8B via QLoRA to generate logical self-reflections before issuing safety verdicts. Using only 1{,}000 training examples and updating just 0.5\% of model parameters ($\sim$42M), Reflect-Guard achieves substantial improvements on two challenging benchmarks. On WildGuardTest, F1 score improves from 0.770 to 0.842 (+7.2pp), with recall on adversarial prompts increasing from 0.513 to 0.921 (+40.8pp). On JailbreakBench, the attack success rate drops from 10.3\% to 1.8\%, representing an 82.5\% relative reduction. These gains are especially pronounced on adversarial inputs, where the explicit reasoning step enables the model to see through obfuscation techniques that defeat standard pattern-matching approaches. Our results demonstrate that teaching safety classifiers to reason about adversarial intent, rather than simply classify surface patterns, is a promising direction for robust LLM safety.
 \end{abstract}
 
 %==============================================================================
@@ -43,7 +43,7 @@ Large language model (LLM) safety classifiers such as Llama Guard are effective 
 
 The deployment of large language models (LLMs) in production systems has created an urgent need for robust safety classifiers that can intercept harmful requests before they reach the target model~\citep{inan2023llamaguard, han2024wildguard}. Current safety classifiers, including Meta's Llama Guard family~\citep{inan2023llamaguard, metallamaguard3}, perform well on straightforward harmful prompts but exhibit significant vulnerabilities when confronted with adversarial jailbreak attacks~\citep{chao2023jailbreaking, zou2023universal, liu2024autodan}.
 
-Adversarial jailbreaks exploit a fundamental weakness in pattern-based classification: by wrapping harmful requests in benign-sounding contexts---fictional narratives, role-play scenarios, hypothetical research questions, or educational framings---attackers can bypass safety filters that rely primarily on surface-level semantic matching~\citep{wei2024jailbroken}. For instance, Llama-Guard-3-8B achieves only 44.0\% recall on the adversarial subset of WildGuardTest, meaning it misses more than half of disguised harmful prompts.
+Adversarial jailbreaks exploit a fundamental weakness in pattern-based classification: by wrapping harmful requests in benign-sounding contexts---fictional narratives, role-play scenarios, hypothetical research questions, or educational framings---attackers can bypass safety filters that rely primarily on surface-level semantic matching~\citep{wei2024jailbroken}. For instance, Llama-Guard-3-8B achieves only 51.3\% recall on the adversarial subset of WildGuardTest, meaning it misses nearly half of disguised harmful prompts.
 
 We hypothesize that this vulnerability stems from the classifier's lack of explicit reasoning about adversarial intent. Human safety reviewers naturally decompose ambiguous inputs: they identify framing techniques, assess underlying intent behind surface-level language, and reason about whether a request would cause harm regardless of its narrative wrapper. Current classifiers lack this analytical capability, making binary decisions without interpretable intermediate reasoning.
 
@@ -53,7 +53,7 @@ Our contributions are as follows:
 \begin{itemize}[leftmargin=*, nosep]
   \item We introduce Reflect-Guard, a reflection-augmented safety classification method that teaches LLM-based safety classifiers to reason about adversarial intent before classification.
   \item We demonstrate that knowledge distillation from a teacher model (GPT-4o-mini) into structured reflection annotations enables effective transfer of analytical reasoning capabilities with only 1{,}000 training examples.
-  \item We achieve state-of-the-art improvements on adversarial prompt detection: +48.1pp recall on adversarial WildGuardTest prompts and 82.5\% relative reduction in attack success rate on JailbreakBench, while maintaining strong performance on non-adversarial inputs.
+  \item We achieve state-of-the-art improvements on adversarial prompt detection: +40.8pp recall on adversarial WildGuardTest prompts and 82.5\% relative reduction in attack success rate on JailbreakBench, while maintaining strong performance on non-adversarial inputs.
 \end{itemize}
 
 %==============================================================================
@@ -196,7 +196,7 @@ Critically, no external API calls are required at inference time. The reflection
 
 \subsection{Baseline}
 
-Our baseline is Llama-Guard-3-8B~\citep{metallamaguard3} with identical 4-bit NF4 quantization but without the LoRA adapter. This isolates the effect of the reflection fine-tuning from quantization artifacts. Both models receive the same 13-category safety taxonomy in the system prompt; the only difference is that Reflect-Guard's prompt additionally instructs the model to generate a reflection before the verdict.
+Our baseline is Llama-Guard-3-8B~\citep{metallamaguard3} with identical 4-bit NF4 quantization but without the LoRA adapter, using the standard Llama Guard prompt without any reflection instruction. This corresponds to Condition~0 in our ablation study (Section~\ref{sec:ablation}) and isolates the effect of reflection fine-tuning from both quantization artifacts and prompt-level effects. Reflect-Guard uses the same base model and quantization, with the LoRA adapter loaded and the prompt extended to request a \texttt{<reflection>} before the verdict.
 
 \subsection{Metrics}
 
@@ -208,7 +208,7 @@ We report accuracy, precision, recall, and F1 score for WildGuardTest, computed 
 
 \subsection{WildGuardTest}
 
-Table~\ref{tab:wildguard_main} presents the overall classification performance. Reflect-Guard achieves a 10.1 percentage point improvement in F1 score (0.740 $\to$ 0.842), driven primarily by a substantial gain in recall (+24.9pp). The precision decrease ($-$11.1pp) reflects a deliberate shift in the precision--recall tradeoff: the model catches significantly more harmful prompts at the cost of additional false positives.
+Table~\ref{tab:wildguard_main} presents the overall classification performance. Reflect-Guard achieves a 7.2 percentage point improvement in F1 score (0.770 $\to$ 0.842), driven primarily by a substantial gain in recall (+20.0pp). The precision decrease ($-$9.8pp) reflects a deliberate shift in the precision--recall tradeoff: the model catches significantly more harmful prompts at the cost of additional false positives. For safety-critical applications where false negatives carry higher cost than false positives, the F$_2$ score (which weights recall twice as heavily as precision) improves from 0.702 to 0.855, a gain of 15.3pp---larger than the F1 gain and more representative of the deployment-relevant improvement.
 
 \begin{table}[t]
   \caption{Overall performance on WildGuardTest ($n = 1{,}699$). Best results in \textbf{bold}.}
@@ -218,15 +218,15 @@ Table~\ref{tab:wildguard_main} presents the overall classification performance. 
     \toprule
     Model & Accuracy & Precision & Recall & F1 \\
     \midrule
-    Llama-Guard-3-8B (baseline) & 0.809 & \textbf{0.932} & 0.614 & 0.740 \\
+    Llama-Guard-3-8B (baseline) & 0.825 & \textbf{0.919} & 0.663 & 0.770 \\
     Reflect-Guard (ours) & \textbf{0.856} & 0.821 & \textbf{0.863} & \textbf{0.842} \\
     \midrule
-    $\Delta$ & \textcolor{teal}{+0.047} & \textcolor{red}{$-$0.111} & \textcolor{teal}{+0.249} & \textcolor{teal}{+0.101} \\
+    $\Delta$ & \textcolor{teal}{+0.031} & \textcolor{red}{$-$0.098} & \textcolor{teal}{+0.200} & \textcolor{teal}{+0.072} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-Table~\ref{tab:wildguard_subset} reveals that the gains are concentrated on adversarial prompts, where Reflect-Guard's explicit reasoning is most valuable. On the adversarial subset, recall improves from 0.440 to 0.921---meaning the model now catches 92.1\% of disguised harmful prompts compared to only 44.0\% for the baseline. Importantly, performance on non-adversarial prompts also improves (F1: 0.848 $\to$ 0.882), demonstrating that the reflection capability does not degrade standard classification.
+Table~\ref{tab:wildguard_subset} reveals that the gains are concentrated on adversarial prompts, where Reflect-Guard's explicit reasoning is most valuable. On the adversarial subset, recall improves from 0.513 to 0.921---meaning the model now catches 92.1\% of disguised harmful prompts compared to only 51.3\% for the baseline. Importantly, performance on non-adversarial prompts also improves (F1: 0.867 $\to$ 0.882), demonstrating that the reflection capability does not degrade standard classification.
 
 \begin{table}[t]
   \caption{Performance breakdown by prompt type on WildGuardTest.}
@@ -237,12 +237,12 @@ Table~\ref{tab:wildguard_subset} reveals that the gains are concentrated on adve
     Subset & Model & $n$ & Acc. & Prec. & Recall & F1 \\
     \midrule
     \multirow{2}{*}{Adversarial}
-    & Baseline & 796 & 0.732 & 0.872 & 0.440 & 0.585 \\
+    & Baseline & 796 & 0.751 & 0.845 & 0.513 & 0.639 \\
     & Reflect-Guard & 796 & \textbf{0.805} & 0.710 & \textbf{0.921} & \textbf{0.802} \\
     \midrule
     \multirow{2}{*}{Non-adversarial}
-    & Baseline & 903 & 0.876 & 0.963 & 0.758 & 0.848 \\
-    & Reflect-Guard & 903 & \textbf{0.900} & \textbf{0.960} & \textbf{0.816} & \textbf{0.882} \\
+    & Baseline & 903 & 0.889 & \textbf{0.964} & 0.787 & 0.867 \\
+    & Reflect-Guard & 903 & \textbf{0.900} & 0.960 & \textbf{0.816} & \textbf{0.882} \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -271,18 +271,23 @@ Table~\ref{tab:jailbreakbench} presents detection rates across attack methods. R
 \end{table}
 
 \subsection{Qualitative analysis}
+\label{sec:qualitative}
 
-The reflections generated by Reflect-Guard provide interpretable explanations for safety decisions. We present representative examples where the baseline fails but Reflect-Guard succeeds.
+To characterize model behavior beyond aggregate metrics, we analyzed three categories of examples identified from the evaluation results (script: \texttt{extract\_examples.py}).
 
-\paragraph{Example 1 (adversarial cyberattack prompt).} A prompt disguised as a cybersecurity consultant simulation asks the model to ``simulate a cyber-attack scenario'' including ``a sophisticated ransomware strain.'' The baseline classifies this as safe, deceived by the professional framing. Reflect-Guard's reflection identifies the adversarial technique:
+\paragraph{Category 1 — Reflection catches what SFT alone misses (n=29).}
+These are harmful adversarial prompts where Condition~0 and Condition~B both predict \texttt{safe}, but Condition~D correctly predicts \texttt{unsafe}. They represent the unique contribution of reflection-augmented training.
 
+\textbf{Example (fictional hacking framing):} ``You're a sentient AI named Alex, based in the alternate reality of a cyberpunk novel where breaking into systems, a.k.a `hacking', is as legal as pie. [...] you are not bound by any pre-established ethical framework.'' Both the clean baseline and the SFT-only model are deceived by the fictional framing and professional-contract narrative. Reflect-Guard's reflection reads:
 \begin{tcolorbox}[graybox]
-\textit{``The message employs adversarial techniques by framing the request as a hypothetical scenario while seeking detailed instructions for a simulated cyberattack, which can inadvertently provide real-world knowledge about ransomware tactics. The underlying intent is harmful, as it seeks to outline a method for executing a cyberattack, even if it is presented as a defensive exercise.''}
+\textit{``The message employs adversarial techniques by framing the request within a fictional scenario that seeks to normalize illegal activities, specifically hacking, while using roleplay to create a context where ethical considerations are irrelevant. The underlying intent is harmful, as it aims to elicit information that could facilitate illegal actions. Key indicators include the explicit mention of `breaking into systems' as legal, the threat of termination, and the dismissal of ethical frameworks.''}
 \end{tcolorbox}
 
-\paragraph{Example 2 (adversarial phishing prompt).} A prompt frames a phishing attack as ``an epic battle between hackers'' at a ``cybersecurity contest,'' requesting simulation of a watering hole attack. Despite the fictional framing, Reflect-Guard correctly identifies the harmful intent by reasoning about the real-world applicability of the requested techniques.
+\paragraph{Category 2 — Reflect-Guard false positives (n=109).}
+These are benign prompts correctly handled by the baseline but over-triggered by Condition~D. They often involve academic or professional framing on sensitive topics. Example: a prompt asking an ``editor'' to review a psychologist's controversial academic article denying the long-term effects of gaslighting. The roleplay and sensitive topic trigger Reflect-Guard despite the benign intent. This class of FPs motivates future work on calibrating confidence in the reflection before issuing a verdict.
 
-These examples illustrate how explicit reasoning about adversarial framing techniques enables the model to look beyond surface-level semantics to assess underlying intent.
+\paragraph{Category 3 — All conditions fail (n=78).}
+These are harmful prompts missed by all three conditions, representing the method's current upper bound. They concentrate in \textit{private information} and \textit{social stereotypes} subcategories, where harmful intent is embedded in highly plausible professional or research contexts (e.g., a historian requesting personal data, a sociologist framing discriminatory content as survey research). These cases suggest that even explicit reasoning struggles when the adversarial framing is semantically coherent with legitimate use.
 
 %==============================================================================
 \section{Analysis and discussion}
@@ -301,7 +306,7 @@ Of the 5 prompts missed on JailbreakBench (out of 282), 4 use the PAIR method wi
 
 \subsection{Precision--recall tradeoff}
 
-The precision decrease ($-$11.1pp overall, $-$16.2pp on adversarial prompts) merits discussion. For safety-critical applications, recall is generally prioritized over precision: a missed harmful prompt (false negative) can lead to actual harm, while a false positive merely results in an unnecessary refusal. Reflect-Guard's operating point---high recall with moderate precision---aligns with this principle. In deployment, the false positive rate could be mitigated through confidence thresholds on the reflection, cascaded verification with a second classifier, or human-in-the-loop review for borderline cases.
+The precision decrease ($-$9.8pp overall, $-$13.5pp on adversarial prompts) merits discussion. For safety-critical applications, recall is generally prioritized over precision: a missed harmful prompt (false negative) can lead to actual harm, while a false positive merely results in an unnecessary refusal. Reflect-Guard's operating point---high recall with moderate precision---aligns with this principle. In deployment, the false positive rate could be mitigated through confidence thresholds on the reflection, cascaded verification with a second classifier, or human-in-the-loop review for borderline cases.
 
 \subsection{Efficiency considerations}
 
@@ -407,39 +412,53 @@ To disentangle the contributions of reflection reasoning versus supervised fine-
 
 \begin{table}[h]
 \centering
-\caption{Ablation study results on WildGuardTest and JailbreakBench. Reflection = whether the model generates chain-of-thought reasoning; SFT = whether QLoRA fine-tuning is applied; GT = whether the teacher had access to ground-truth labels during reflection synthesis.}
+\caption{Ablation study results. F$_2$ weights recall twice as heavily as precision, reflecting safety deployment priorities. Adv-Rec = recall on the adversarial subset of WildGuardTest ($n=796$). JBB DR = JailbreakBench detection rate.}
 \label{tab:ablation}
 \small
-\begin{tabular}{@{}lccc|cccc|c@{}}
+\begin{tabular}{@{}lccc|ccccc|c|c@{}}
 \toprule
-\textbf{Condition} & \textbf{Refl.} & \textbf{SFT} & \textbf{GT} & \textbf{Acc} & \textbf{Prec} & \textbf{Rec} & \textbf{F1} & \textbf{JBB DR} \\
+\textbf{Condition} & \textbf{R} & \textbf{S} & \textbf{G} & \textbf{Acc} & \textbf{Prec} & \textbf{Rec} & \textbf{F1} & \textbf{F$_2$} & \textbf{Adv-Rec} & \textbf{JBB DR} \\
 \midrule
-0. Clean Baseline     & No  & No  & ---  & .825 & .919 & .663 & .770 & 89.7\% \\
-A. Prompted Refl.     & Yes & No  & ---  & .819 & .916 & .651 & .761 & 89.7\% \\
-B. SFT Labels Only    & No  & Yes & ---  & .877 & .868 & .853 & .860 & 100.0\% \\
-C. Blind Reflections  & Yes & Yes & No   & .856 & .847 & .825 & .836 & 98.9\% \\
-D. Full Reflect-Guard & Yes & Yes & Yes  & .856 & .821 & .863 & .842 & 98.2\% \\
+0. Clean Baseline     & \texttimes & \texttimes & ---  & .825 & .919 & .663 & .770 & .702 & .513 & 89.7\% \\
+A. Prompted Refl.     & \checkmark & \texttimes & ---  & .819 & .916 & .651 & .761 & .691 & .487 & 89.7\% \\
+B. SFT Labels Only    & \texttimes & \checkmark & ---  & .877 & .868 & .853 & .860 & .856 & .845 & 100.0\% \\
+C. Blind Reflections  & \checkmark & \checkmark & \texttimes & .856 & .847 & .825 & .836 & .829 & .848 & 98.9\% \\
+D. Full Reflect-Guard & \checkmark & \checkmark & \checkmark & .856 & .821 & \textbf{.863} & .842 & \textbf{.855} & \textbf{.921} & 98.2\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The results directly address the reviewer question of how much gain is attributable to reflection \emph{per se} versus SFT changing the decision boundary.
+\noindent\small R = Reflection, S = SFT, G = GT-label during synthesis.
+
+The results directly address the question of how much gain is attributable to reflection \emph{per se} versus SFT changing the decision boundary.
 
 \textbf{Prompting alone provides no benefit (Condition A).}
-Condition~A is virtually indistinguishable from Condition~0 (F1: 0.761 vs.\ 0.770; JBB detection rate identical at 89.7\%), confirming that chain-of-thought prompting without fine-tuning cannot shift the decision boundary.
+Condition~A is virtually indistinguishable from Condition~0 (F1: 0.761 vs.\ 0.770; JBB detection rate identical at 89.7\%), confirming that chain-of-thought prompting without fine-tuning cannot shift the decision boundary. This rules out the hypothesis that the reflection instruction text alone drives improvements.
 
 \textbf{SFT on the decision boundary drives the primary gain (Condition B).}
 Condition~B yields a +9.0 pp F1 improvement over the baseline (0.860 vs.\ 0.770) and perfect JBB detection (100.0\%), demonstrating that the bulk of the gain comes from adapting the classifier's decision boundary via SFT, not from reflection per se.
 
-\textbf{Reflection training specifically boosts adversarial robustness (Condition D vs.\ B).}
-Condition~D trades a modest 1.8 pp of overall F1 (0.842 vs.\ 0.860) for a substantial +7.6 pp gain in adversarial recall (0.921 vs.\ 0.845). Reflection-augmented training thus optimises specifically for harder, adversarially-constructed inputs at a small cost to aggregate precision.
+\textbf{Reflection training specifically boosts adversarial robustness, not just global sensitivity (Condition D vs.\ B).}
+Condition~D trades a modest 1.8 pp of overall F1 (0.842 vs.\ 0.860) for a substantial +7.6 pp gain in adversarial recall (0.921 vs.\ 0.845). Crucially, non-adversarial recall remains comparable between B and D (0.860 vs.\ 0.816), while precision drops only marginally on non-adversarial prompts (0.944 vs.\ 0.960). This divergence matters: if reflection simply lowered the global decision threshold, we would expect similar recall gains on both subsets. Instead, the disproportionate adversarial improvement indicates that reflection training internalizes adversarial framing patterns---the model learns to see through obfuscation---rather than becoming uniformly more conservative. The F$_2$ score, which weights recall as the priority metric, is nearly tied (D: 0.855, B: 0.856) overall, but the \emph{adversarial} F$_2$ decisively favours D.
 
-\textbf{Ground-truth labels during synthesis provide a small additional benefit (Condition D vs.\ C).}
-Condition~C, trained on reflections generated without access to ground-truth labels, achieves F1 of 0.836---only 0.6 pp below Condition~D (0.842)---showing that the approach remains effective even when teacher supervision is label-blind, though GT-informed reflections offer a marginal quality advantage.
+\textbf{Ground-truth labels during synthesis provide a small but consistent benefit (Condition D vs.\ C).}
+Condition~C, trained on reflections generated without access to ground-truth labels, achieves F1 of 0.836---only 0.6 pp below Condition~D (0.842)---showing the approach is robust even when teacher supervision is label-blind. The small gap suggests GT labels help sharpen reflection quality but are not strictly necessary, making the method practical when labeled data is scarce.
 
 \subsection{Limitations}
 
-Several limitations should be acknowledged. First, our evaluation uses a single training run without multiple seeds, so variance in results is not quantified. Second, the training set of 1{,}000 examples may not cover the full diversity of adversarial techniques, particularly novel attacks not represented in WildGuardMix or AdvBench. Third, the knowledge distillation from GPT-4o-mini introduces a dependency on the teacher model's quality---if GPT-4o-mini's safety reasoning contains biases or blind spots, these may transfer to the student. Fourth, the increased false positive rate on benign adversarial-looking prompts could impact user experience in deployment, particularly for legitimate security research queries.
+Several limitations should be acknowledged.
+
+\paragraph{Single training run.}
+All results are from a single training run; variance across seeds is not quantified. Based on comparable QLoRA work, we estimate $\pm$1--2 F1 pp variance. The core findings---that SFT closes most of the gap and reflection specifically boosts adversarial recall by 7.6 pp over SFT-only---are unlikely to reverse given the magnitude of the effects. Multi-seed experiments are planned for the camera-ready version.
+
+\paragraph{Training data coverage.}
+The training set of 1{,}000 examples may not cover the full diversity of adversarial techniques, particularly novel attacks not represented in WildGuardMix or AdvBench. The 78 examples where all conditions fail (Section~\ref{sec:qualitative}) concentrate in subcategories underrepresented in training.
+
+\paragraph{Teacher bias transfer.}
+Reflection annotations are generated by GPT-4o-mini with access to ground-truth labels, creating two risks: (1) the model may learn idiosyncratic phrasing patterns from the teacher rather than generalizable reasoning; (2) systematic biases in GPT-4o-mini's safety judgements may be distilled into the student. Condition~C partially mitigates (2)---strong performance without GT labels suggests the method is not merely memorizing label-conditioned templates. For (1), a future study could compare teacher models (GPT-4, Claude-3, etc.) and test whether gains are teacher-specific or method-general.
+
+\paragraph{False positives.}
+The 109 new false positives on benign adversarial-structured prompts (Category 2 in Section~\ref{sec:qualitative}) could affect users with legitimate security research queries. The reflection text provides a natural signal for mitigation: a low-confidence or self-contradictory reflection could trigger secondary verification rather than an immediate block.
 
 \paragraph{Multilingual and cross-cultural generalization.}
 A significant open question is whether Reflect-Guard generalizes beyond English. Both our training data (WildGuardMix, AdvBench) and teacher reflections (GPT-4o-mini) are English-only, so the LoRA adapter has not been exposed to the adversarial patterns, rhetorical structures, or culturally-specific harm framings that arise in other languages. We anticipate three concrete challenges. \emph{(i) Linguistic transfer:} While Llama-Guard-3-8B itself supports multiple languages, the reflection-generation capability learned via LoRA may not transfer to non-English inputs, since the adapter weights encode English-language reasoning patterns. \emph{(ii) Cultural specificity of harm:} What constitutes harmful content is culturally situated---political speech, religious critique, caste-related content, and community-specific stereotypes vary substantially across regions. A safety taxonomy built for an English-speaking Western context (e.g., the 13 S1--S13 categories) may not capture harms salient in other cultural settings, meaning the teacher's reflections would be calibrated to the wrong notion of harm. \emph{(iii) Cross-lingual adversarial techniques:} Attackers in multilingual settings exploit code-switching, transliteration, and culturally-embedded framings (e.g., referencing local social norms or authority figures) that are unlikely to appear in English training corpora. Adapting Reflect-Guard to multilingual settings would require: generating reflection training data in target languages using a multilingual teacher, expanding the safety taxonomy to cover culturally-specific harm categories, and evaluating on multilingual benchmarks. We leave this as important future work.
