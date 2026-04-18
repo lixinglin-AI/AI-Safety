@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=reflect-ablation
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:a5000:1
+#SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 #SBATCH --time=12:00:00
-#SBATCH --output=/vast/palmer/home.mccleary/ll2276/AI-Safety-Abuse/logs/ablation_%j.out
+#SBATCH --output=%x_%j.out
 
 module load miniconda
 
@@ -14,7 +14,7 @@ source $(conda info --base)/etc/profile.d/conda.sh
 
 conda activate reflect_guard
 
-cd /vast/palmer/home.mccleary/ll2276/AI-Safety-Abuse
+cd "$HOME/AI-Safety-Abuse"
 
 set -euo pipefail
 

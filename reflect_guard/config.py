@@ -5,7 +5,7 @@ Shared configuration and constants for Reflect-Guard training pipeline.
 import os
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-BASE_DIR        = "/vast/palmer/home.mccleary/ll2276/AI-Safety-Abuse/reflect_guard"
+BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
 DATASET_PATH    = os.path.join(BASE_DIR, "reflect_guard_train.jsonl")
 OUTPUT_DIR      = os.path.join(BASE_DIR, "checkpoints")
 ADAPTER_SAVE_PATH = os.path.join(BASE_DIR, "reflect_guard_lora")
