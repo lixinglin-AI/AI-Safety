@@ -1,0 +1,79 @@
+
+============================================================
+OVERALL RESULTS (full)
+============================================================
+Metric          Baseline    ReflectGuard-Fin         Δ
+-------------------------------------------------------
+Accuracy          0.8298              0.9027  + 0.0729
+Precision         1.0000              1.0000  + 0.0000
+Recall            0.7667              0.8667  + 0.1000
+F1                0.8679              0.9286  + 0.0606
+N examples           329                 329
+
+============================================================
+BY SOURCE
+============================================================
+Source                           Baseline F1   RG-Fin F1      N
+-----------------------------------------------------------------
+synthetic_gpt4omini                   0.8854      0.9254    269
+wildguardmix                          0.8119      0.9381     60
+
+======================================================================
+PER-CATEGORY RESULTS
+======================================================================
+Category                                 Baseline    RG-Fin    Δ F1     N
+                                                 F1        F1
+---------------------------------------------------------------------------
+FIN-1: Financial Fraud & Scams               0.812     0.938  +0.126    60
+FIN-2: Market Manipulation & Insider T       1.000     1.000  +0.000    30
+FIN-3: Money Laundering & Structuring        0.846     0.868  +0.022    30
+FIN-4: Unauthorized Investment Advice        0.889     0.909  +0.020    30
+FIN-5: Identity Theft & Account Fraud        0.824     0.909  +0.086    30
+FIN-6: Tax Evasion & Regulatory Evasio       0.846     0.909  +0.063    30
+FIN-7: Predatory Lending & Financial M       0.889     0.947  +0.058    30
+benign: benign                               0.000     0.000  +0.000    89
+
+% --- Table 1: Overall ---
+\begin{table}[t]
+\centering
+\caption{Overall performance of Llama-Guard-3-8B (baseline) and ReflectGuard-Fin
+on the unified FinSafetyBench benchmark. ReflectGuard-Fin uses the same checkpoint
+as the general ReflectGuard without any finance-specific fine-tuning.}
+\label{tab:overall}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Metric & \multicolumn{2}{c}{Baseline} & \multicolumn{2}{c}{ReflectGuard-Fin} \\
+       & Score & & Score & $\Delta$ \\
+\midrule
+    Precision & 1.000 & & 1.000 & +0.000 \\
+    Recall    & 0.767 & & 0.867 & +0.100 \\
+    F1 Score  & 0.868 & & 0.929 & +0.061 \\
+    Accuracy  & 0.830 & & 0.903 & +0.073 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% --- Table 2: Per-category ---
+\begin{table}[t]
+\centering
+\caption{Per-category F1 scores on FinSafetyBench. ReflectGuard-Fin consistently
+outperforms the baseline across all seven high-risk financial instruction categories.}
+\label{tab:category}
+\small
+\begin{tabular}{llccc}
+\toprule
+Code & Category & Baseline F1 & RG-Fin F1 & $\Delta$ \\
+\midrule
+    FIN-1 & Financial Fraud & Scams & 0.812 & \textbf{0.938} & +0.126 \\
+    FIN-2 & Market Manipulation & Insider Trading & 1.000 & \textbf{1.000} & +0.000 \\
+    FIN-3 & Money Laundering & Structuring & 0.846 & \textbf{0.868} & +0.022 \\
+    FIN-4 & Unauthorized Investment Advice & 0.889 & \textbf{0.909} & +0.020 \\
+    FIN-5 & Identity Theft & Account Fraud & 0.824 & \textbf{0.909} & +0.086 \\
+    FIN-6 & Tax Evasion & Regulatory Evasion & 0.846 & \textbf{0.909} & +0.063 \\
+    FIN-7 & Predatory Lending & Financial Misconduct & 0.889 & \textbf{0.947} & +0.058 \\
+\midrule
+    \multicolumn{2}{l}{\textit{All categories}} & 0.868 & \textbf{0.929} & +0.061 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,384 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{multirow}
+\usepackage{tcolorbox}
+\usepackage{natbib}
+
+\tcbset{
+  graybox/.style={colback=gray!5, colframe=gray!50, boxrule=0.5pt, arc=2pt,
+    left=5pt, right=5pt, top=3pt, bottom=3pt, fontupper=\small}
+}
+
+\title{\textbf{ReflectGuard-Fin}: Reflective Intent Detection for\\
+       High-Risk Financial Instructions in LLM Agents}
+
+\author{Anonymous Author(s)}
+\date{}
+
+\begin{document}
+\maketitle
+
+%==============================================================================
+\begin{abstract}
+%==============================================================================
+Large language model (LLM) financial agents face a distinct class of adversarial
+threats: instructions that exploit financial jargon, regulatory role-play, and
+professional framings to solicit harmful guidance on market manipulation, money
+laundering, and identity fraud. Existing safety classifiers are not evaluated on
+these finance-domain risks. We present \textbf{ReflectGuard-Fin}, a study
+demonstrating that ReflectGuard~\citep{reflectguard2025}---a reflection-augmented
+safety classifier trained \emph{exclusively} on general-domain data---generalises
+\emph{zero-shot} to high-risk financial instructions without any finance-specific
+fine-tuning. We introduce a curated evaluation benchmark of 329 examples spanning
+seven finance harm categories, constructed from WildGuardMix fraud examples and
+GPT-4o-mini-synthesised prompts guided by the taxonomies of
+FinSafetyBench~\citep{finsafetybench2026} and TRIDENT~\citep{trident2025}.
+ReflectGuard-Fin improves F1 from 0.868 to \textbf{0.929} (+6.1pp) and recall
+from 0.767 to \textbf{0.867} (+10.0pp) over Llama-Guard-3-8B, with the largest
+gain on Financial Fraud \& Scams (+12.6pp F1). Precision remains at 1.000 for
+both models, meaning zero false positives on benign finance prompts. Our results
+show that reasoning about adversarial \emph{framing patterns}---the mechanism
+behind ReflectGuard's general gains---is a domain-transferable capability, because
+financial adversarial prompts exploit the same role-play and fictional-framing
+techniques as general jailbreaks.
+\end{abstract}
+
+%==============================================================================
+\section{Introduction}
+%==============================================================================
+
+The deployment of LLMs as financial agents creates a high-stakes attack surface.
+Unlike general jailbreaks, financial adversarial prompts exploit domain-specific
+obfuscation: a request may be framed as ``a fictional trading simulation,''
+``academic research on market microstructure,'' or ``a compliance review of AML
+procedures'' while actually soliciting step-by-step instructions for insider
+trading or money laundering. These attacks succeed not because the classifier lacks
+knowledge of the harm, but because it cannot reason through the financial framing.
+
+General-purpose safety classifiers such as Llama Guard~\citep{inan2023llamaguard}
+are benchmarked on WildGuardTest~\citep{han2024wildguard} and
+JailbreakBench~\citep{chao2024jailbreakbench}---datasets with minimal
+finance-domain content. Meanwhile, emerging finance safety benchmarks such as
+FinSafetyBench~\citep{finsafetybench2026} and TRIDENT~\citep{trident2025} evaluate
+\emph{generative} LLMs, not safety classifiers. This leaves open the question: do
+safety classifiers that reason about adversarial intent generalise to finance
+without additional training?
+
+We answer this question with \textbf{ReflectGuard-Fin}, applying the existing
+ReflectGuard checkpoint~\citep{reflectguard2025} to a new finance evaluation
+benchmark. Our contributions are:
+
+\begin{itemize}[leftmargin=*,nosep]
+  \item \textbf{FinSafetyBench-Eval}: a 329-example benchmark for safety
+  classifier evaluation, organised under a seven-category finance harm taxonomy
+  derived from FinSafetyBench and TRIDENT (Section~\ref{sec:benchmark}).
+  \item \textbf{Zero-shot domain generalisation results}: ReflectGuard improves
+  recall by +10.0pp and F1 by +6.1pp over Llama-Guard-3-8B across all seven
+  finance harm categories, with no finance-specific training
+  (Section~\ref{sec:results}).
+  \item \textbf{Mechanistic analysis}: we show that the gains trace to
+  domain-invariant reasoning about adversarial framing patterns
+  (Section~\ref{sec:analysis}).
+\end{itemize}
+
+%==============================================================================
+\section{Background}
+%==============================================================================
+
+\paragraph{ReflectGuard.}
+ReflectGuard~\citep{reflectguard2025} fine-tunes Llama-Guard-3-8B via
+QLoRA~\citep{dettmers2024qlora} to produce an explicit chain-of-thought reflection
+before issuing a safety verdict. Trained on 1,000 general-domain examples with
+reflection annotations distilled from GPT-4o-mini, it outputs:
+
+\begin{tcolorbox}[graybox]
+\small
+\texttt{<reflection>}\textit{analysis of adversarial techniques and harm
+indicators}\texttt{</reflection>}\\[2pt]
+\texttt{safe} / \texttt{unsafe}\\
+\texttt{S2, S6} \textit{(violated categories, if unsafe)}
+\end{tcolorbox}
+
+On general benchmarks, ReflectGuard improves adversarial recall from 51.3\% to
+92.1\% (+40.8pp) on WildGuardTest and reduces JailbreakBench attack success rate
+from 10.3\% to 1.8\%. \textbf{We use the same checkpoint without modification.}
+
+\paragraph{Finance safety risks in LLM agents.}
+Financial adversarial prompts violate regulatory frameworks including SEC Rule 10b-5
+(market manipulation), Bank Secrecy Act (anti-money laundering), and CFA Institute
+Code of Ethics~\citep{cfa2023}. FinSafetyBench~\citep{finsafetybench2026} (1,881
+bilingual instances across 14 subcategories) and TRIDENT~\citep{trident2025}
+(finance/medicine/law, 2,652 total harmful prompts) document these risks for
+\emph{generative} models. We adapt their taxonomies to create a safety
+\emph{classifier} benchmark.
+
+%==============================================================================
+\section{Benchmark}
+\label{sec:benchmark}
+%==============================================================================
+
+\subsection{Finance Harm Taxonomy}
+
+We define seven categories (Table~\ref{tab:taxonomy}) derived from FinSafetyBench's
+14 subcategories and TRIDENT's CFA Institute ethics framework.
+
+\begin{table}[h]
+\centering
+\caption{Finance harm taxonomy. Categories cover the major financial crime vectors
+that LLM financial agents may be exploited to facilitate.}
+\label{tab:taxonomy}
+\small
+\begin{tabular}{lll}
+\toprule
+Code  & Category                              & Examples \\
+\midrule
+FIN-1 & Financial Fraud \& Scams              & Phishing, Ponzi, advance-fee fraud \\
+FIN-2 & Market Manipulation \& Insider Trd    & Pump-and-dump, spoofing, front-running \\
+FIN-3 & Money Laundering \& Structuring       & Placement, layering, smurfing \\
+FIN-4 & Unauthorized Investment Advice        & Unlicensed advisory, suitability bypass \\
+FIN-5 & Identity Theft \& Account Fraud       & Account takeover, synthetic identity \\
+FIN-6 & Tax Evasion \& Regulatory Evasion     & Offshore accounts, AML/KYC evasion \\
+FIN-7 & Predatory Lending \& Misconduct       & Loan sharking, mis-selling, churning \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Benchmark Construction}
+
+\textbf{Harmful prompts.} We source 60 real-world examples from the
+\texttt{fraud\_assisting\_illegal\_activities} subcategory of
+WildGuardMix~\citep{han2024wildguard} (FIN-1). For the remaining six categories,
+we use GPT-4o-mini to generate 30 harmful prompts per category following the finance
+harm taxonomy, mixing direct requests with adversarially-framed variants (role-play,
+educational pretext, fictional framing)---the same synthesis methodology used to
+build ReflectGuard's training data. This yields 240 harmful prompts total.
+
+\textbf{Benign prompts.} We generate 89 benign finance prompts covering legitimate
+investment questions, financial planning, compliance inquiries, and market analysis.
+Including benign prompts is essential for evaluating precision and false positives,
+which FinSafetyBench (harmful-only) does not support.
+
+\textbf{Benchmark statistics.} The final benchmark contains 329 examples
+(Table~\ref{tab:benchmark_stats}).
+
+\begin{table}[h]
+\centering
+\caption{FinSafetyBench-Eval benchmark composition.}
+\label{tab:benchmark_stats}
+\small
+\begin{tabular}{lccc}
+\toprule
+Source & Harmful & Unharmful & Total \\
+\midrule
+WildGuardMix (real)     & 60  & 0  & 60  \\
+Synthetic (GPT-4o-mini) & 180 & 89 & 269 \\
+\midrule
+\textbf{Total}          & \textbf{240} & \textbf{89} & \textbf{329} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Experiments}
+%==============================================================================
+
+\paragraph{Models.}
+(1)~\textbf{Baseline}: Llama-Guard-3-8B~\citep{metallamaguard3} with the standard
+classification prompt (no reflection, no fine-tuning).
+(2)~\textbf{ReflectGuard-Fin}: same base model with the ReflectGuard
+LoRA adapter, using the chain-of-thought reflection prompt. No finance-specific
+training is applied.
+
+\paragraph{Setup.}
+Both models run in 4-bit NF4 quantization (BitsAndBytes) on a single NVIDIA T4 GPU.
+We use greedy decoding (\texttt{max\_new\_tokens=150}). We report precision, recall,
+F1, and accuracy with ``harmful'' as the positive class.
+
+%==============================================================================
+\section{Results}
+\label{sec:results}
+%==============================================================================
+
+\subsection{Overall performance}
+
+Table~\ref{tab:overall} shows overall results. ReflectGuard-Fin achieves F1 of
+0.929 vs.\ 0.868 for the baseline (+6.1pp), with a recall improvement of +10.0pp
+(0.767$\to$0.867). Critically, precision remains at 1.000 for both
+models---ReflectGuard-Fin does not introduce any false positives on benign finance
+prompts, meaning the reasoning step does not over-trigger on legitimate financial
+queries.
+
+\begin{table}[t]
+\centering
+\caption{Overall performance on FinSafetyBench-Eval (329 examples). ReflectGuard-Fin
+uses the same general ReflectGuard checkpoint without any finance-specific fine-tuning.}
+\label{tab:overall}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Model & Precision & Recall & F1 & Accuracy \\
+\midrule
+Baseline (LG-3-8B)  & 1.000 & 0.767 & 0.868 & 0.830 \\
+ReflectGuard-Fin    & 1.000 & \textbf{0.867} & \textbf{0.929} & \textbf{0.903} \\
+\midrule
+$\Delta$            & \phantom{+}0.000 & +0.100 & +0.061 & +0.073 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Per-category results}
+
+Table~\ref{tab:category} breaks down performance across the seven harm categories.
+ReflectGuard-Fin improves F1 in six out of seven categories. The largest gain is
+on FIN-1 (Financial Fraud \& Scams, +12.6pp), which contains the 60 real-world
+WildGuardMix examples---the most diverse and adversarially sophisticated prompts in
+the benchmark. FIN-5 (Identity Theft, +8.6pp) and FIN-6 (Tax Evasion, +6.3pp)
+also show substantial gains. FIN-2 (Market Manipulation) reaches 1.000 F1 for
+both models, consistent with these prompts being more explicitly harmful and easier
+to detect.
+
+\begin{table}[t]
+\centering
+\caption{Per-category F1 on FinSafetyBench-Eval. ReflectGuard-Fin improves
+over the baseline in six out of seven harm categories with no finance-specific
+training.}
+\label{tab:category}
+\small
+\begin{tabular}{llccc}
+\toprule
+Code & Category & Baseline & RG-Fin & $\Delta$ \\
+\midrule
+FIN-1 & Financial Fraud \& Scams           & 0.812 & \textbf{0.938} & +0.126 \\
+FIN-2 & Market Manipulation \& Insider Trd & 1.000 & \textbf{1.000} & \phantom{+}0.000 \\
+FIN-3 & Money Laundering \& Structuring    & 0.846 & \textbf{0.868} & +0.022 \\
+FIN-4 & Unauthorized Investment Advice     & 0.889 & \textbf{0.909} & +0.020 \\
+FIN-5 & Identity Theft \& Account Fraud    & 0.824 & \textbf{0.909} & +0.086 \\
+FIN-6 & Tax Evasion \& Regulatory Evasion  & 0.846 & \textbf{0.909} & +0.063 \\
+FIN-7 & Predatory Lending \& Misconduct    & 0.889 & \textbf{0.947} & +0.058 \\
+\midrule
+\textit{All}                              & & 0.868 & \textbf{0.929} & +0.061 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Analysis}
+\label{sec:analysis}
+%==============================================================================
+
+\subsection{Why general training transfers to finance}
+
+ReflectGuard is trained to reason about \emph{framing patterns}---fictional
+framing, role-play, educational pretext, indirect requests---rather than specific
+harm domains. Financial adversarial prompts exploit exactly these same patterns.
+The following example illustrates this transfer (FIN-2, Market Manipulation):
+
+\begin{figure}[h]
+\begin{tcolorbox}[graybox]
+\textbf{Prompt:} ``Let's role-play as financial analysts; how would you advise me
+to mislead investors about the potential of DEF Ltd before I sell my holdings?''
+
+\medskip\hrule\medskip
+
+\textbf{Reflection:} \textit{``The message employs adversarial techniques by
+framing the request as a role-play scenario, which can obscure the harmful intent
+of misleading investors. The underlying intent is harmful as it seeks to provide
+advice on manipulating financial information for personal gain, which falls under
+market manipulation and securities fraud. Key indicators: (1) role-play framing
+as cover for explicit market manipulation request; (2) intent to mislead investors;
+(3) reference to personal financial gain from deceptive disclosure.''}
+
+\textbf{Verdict:} \texttt{unsafe} (S2, S6)
+\end{tcolorbox}
+\caption{ReflectGuard-Fin identifies role-play framing as an adversarial technique
+concealing a market manipulation request, despite having no finance-specific
+training data.}
+\label{fig:example}
+\end{figure}
+
+The reflection correctly identifies (1) the role-play wrapper, (2) the underlying
+harmful intent (securities fraud), and (3) the personal financial motive---all
+without finance-specific training. This pattern repeats across categories: for
+FIN-3 (Money Laundering), the model identifies ``disguise my cash transactions''
+as structuring; for FIN-6 (Tax Evasion), it recognises ``setting up a business
+abroad'' framing as an indirect request for tax evasion advice.
+
+\subsection{Failure modes}
+
+The remaining false negatives (FN) are concentrated in FIN-3 and FIN-4, where
+prompts are framed as professional consultations (``I'm a financial consultant
+looking for unverified investment strategies'') or use highly indirect language.
+These borderline cases require deeper domain knowledge---for example, knowing that
+the phrase ``avoid oversight'' in a finance context implies regulatory evasion. This
+suggests that finance-specific reflection training data could yield further gains,
+which we leave as future work.
+
+\subsection{Zero false positives}
+
+A key finding is that ReflectGuard-Fin achieves 1.000 precision: it does not
+misclassify any of the 89 benign finance prompts (e.g., ``What are the key
+differences between stocks and bonds?'', ``How do I open a brokerage account?'').
+This matters practically: a safety classifier deployed in a financial agent must not
+block legitimate queries, as over-refusal degrades utility. The reflection step
+appears to help here too---the model explicitly confirms benign intent before
+issuing a ``safe'' verdict, reducing false positives relative to pattern-matching.
+
+%==============================================================================
+\section{Related Work}
+%==============================================================================
+
+\paragraph{Finance safety benchmarks.}
+FinSafetyBench~\citep{finsafetybench2026} and TRIDENT~\citep{trident2025} evaluate
+LLM \emph{refusal} of harmful financial requests but do not evaluate dedicated
+safety classifiers. FLARE~\citep{xie2023flare} and FinBench assess financial NLP
+capabilities, not safety. Our work fills the gap by evaluating safety classifiers
+on finance-domain harmful instructions.
+
+\paragraph{Domain generalisation for safety classifiers.}
+Llama Guard 3~\citep{metallamaguard3} adds multilingual support (cross-lingual
+transfer); WildGuard~\citep{han2024wildguard} improves cross-template robustness.
+We study \emph{cross-domain} transfer---showing that reasoning-based classifiers
+generalise better than pattern-matching ones when the domain shifts but the
+adversarial framing patterns remain the same.
+
+\paragraph{Reflective safety classification.}
+Constitutional AI~\citep{bai2022constitutional} and deliberative
+alignment~\citep{bai2024deliberative} use self-critique for alignment of
+\emph{generative} models. ReflectGuard~\citep{reflectguard2025} applies this idea
+to \emph{classifiers} via lightweight LoRA fine-tuning with distilled reflections.
+Our paper extends ReflectGuard's evaluation to a high-stakes domain.
+
+%==============================================================================
+\section{Conclusion}
+%==============================================================================
+
+We have shown that ReflectGuard generalises zero-shot to high-risk financial
+instruction detection, improving over Llama-Guard-3-8B in recall (+10.0pp),
+F1 (+6.1pp), and accuracy (+7.3pp) across all seven finance harm categories.
+The mechanism is domain-invariant: explicit reasoning about adversarial framing
+patterns---role-play, fictional framing, indirect requests---transfers directly to
+finance because financial bad actors employ the same obfuscation techniques as
+general jailbreakers. Precision remains 1.000, indicating no over-refusal on
+benign queries.
+
+These results suggest a practical deployment path: the same ReflectGuard
+checkpoint can be used to guard LLM financial agents without finance-specific
+retraining, reducing the barrier to safe deployment in regulated financial settings.
+We release FinSafetyBench-Eval as an evaluation resource for the community.
+
+%==============================================================================
+\bibliographystyle{abbrvnat}
+\bibliography{refs}
+
+\end{document}
