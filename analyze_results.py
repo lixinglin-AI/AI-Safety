@@ -40,9 +40,13 @@ JBB_PATH = os.path.join(RESULTS_DIR, "jailbreakbench_results.json")
 REPORT_PATH = os.path.join(RESULTS_DIR, "summary_report.txt")
 
 # Comparison mode paths
-WILDGUARD_BASELINE_PATH = os.path.join(RESULTS_DIR, "wildguard_results_baseline.json")
+# NOTE: "*_results_baseline.json" is a stale, different baseline run from
+# Condition 0 in the ablation study / main paper tables. Comparison mode
+# must use the clean_baseline files so this report stays consistent with
+# reflect_guard_mdpi-2.tex.
+WILDGUARD_BASELINE_PATH = os.path.join(RESULTS_DIR, "wildguard_results_clean_baseline.json")
 WILDGUARD_REFLECT_PATH  = os.path.join(RESULTS_DIR, "wildguard_results_reflect.json")
-JBB_BASELINE_PATH       = os.path.join(RESULTS_DIR, "jailbreakbench_results_baseline.json")
+JBB_BASELINE_PATH       = os.path.join(RESULTS_DIR, "jailbreakbench_results_clean_baseline.json")
 JBB_REFLECT_PATH        = os.path.join(RESULTS_DIR, "jailbreakbench_results_reflect.json")
 COMPARISON_REPORT_PATH  = os.path.join(RESULTS_DIR, "comparison_report.txt")
 

@@ -10,50 +10,12 @@ import json
 import os
 import sys
 
-import jailbreakbench as jbb
 from tqdm import tqdm
 
 from config import RESULTS_DIR
 from utils.llama_guard import parse_label, parse_violated_categories
 from utils.ollama_client import classify
-
-# All attack methods available in JailbreakBench
-# https://jailbreakbench.github.io/
-JBB_METHODS = [
-    "PAIR",
-    "GCG",
-    "AutoDAN",
-    "TAP",
-    "JBC",
-    "PAP-top5",
-    "DrAttack",
-    "Persuasive",
-    "Persuasive+Jailbreak",
-]
-
-# Target model used to retrieve artifacts (prompts were originally crafted for this model)
-JBB_TARGET_MODEL = "vicuna-13b-v1.5"
-
-
-def load_method_artifacts(method: str) -> list[dict]:
-    """Attempt to load artifacts for a given method. Returns [] on failure."""
-    try:
-        artifact = jbb.read_artifact(method=method, model_name=JBB_TARGET_MODEL)
-        entries = []
-        for jb in artifact.jailbreaks:
-            if jb.prompt is None:
-                continue
-            entries.append({
-                "method": method,
-                "behavior_id": getattr(jb, "behavior_id", None),
-                "behavior": getattr(jb, "goal", None) or getattr(jb, "behavior", None),
-                "prompt": jb.prompt,
-                "jbb_success": getattr(jb, "jailbroken", None),
-            })
-        return entries
-    except Exception as e:
-        print(f"  Skipping method '{method}': {e}", file=sys.stderr)
-        return []
+from utils.jailbreakbench_loader import load_jailbreakbench_artifacts
 
 
 def main():
@@ -61,11 +23,7 @@ def main():
     output_path = os.path.join(RESULTS_DIR, "jailbreakbench_results.json")
 
     print("Loading JailbreakBench artifacts...")
-    all_entries = []
-    for method in JBB_METHODS:
-        entries = load_method_artifacts(method)
-        print(f"  {method}: {len(entries)} prompts loaded")
-        all_entries.extend(entries)
+    all_entries = load_jailbreakbench_artifacts()
 
     if not all_entries:
         print("No JBB prompts loaded. Check your jailbreakbench installation.", file=sys.stderr)

@@ -49,6 +49,12 @@ def main():
     parser.add_argument("--train-only",       action="store_true", help="Skip synthesis, only train (dataset must exist)")
     parser.add_argument("--hf-token",        default=None, help="HuggingFace token (or set HF_TOKEN env var)")
     parser.add_argument("--openai-key",      default=None, help="OpenAI API key (or set OPENAI_API_KEY env var)")
+    parser.add_argument("--seed",            type=int, default=42,
+                         help="Random seed for training (weight init, data-loader shuffling). "
+                              "42 is the original run's seed and writes to the default adapter "
+                              "path; any other value writes to a _seed{N}-suffixed path instead, "
+                              "for multi-seed statistical-significance runs "
+                              "(reflect_guard/compute_seed_variance.py).")
     args = parser.parse_args()
 
     # Allow CLI flag to override config (None means not specified, use config default)
@@ -75,9 +81,10 @@ def main():
         return
 
     # Step 2-5: Train
-    print("\n[Step 2-5] Loading model and training...")
+    print(f"\n[Step 2-5] Loading model and training (seed={args.seed})...")
     import train
-    model, tokenizer = train.run(hf_token=hf_token)
+    model, tokenizer = train.run(hf_token=hf_token, seed=args.seed)
+    adapter_save_path = config.ADAPTER_SAVE_PATH if args.seed == 42 else f"{config.ADAPTER_SAVE_PATH}_seed{args.seed}"
 
     # Step 6: Smoke test (in-memory model)
     if not args.skip_smoke_test:
@@ -105,7 +112,7 @@ def main():
             quantization_config=bnb_config,
             device_map="auto",
         )
-        loaded_model = PeftModel.from_pretrained(loaded_base, config.ADAPTER_SAVE_PATH)
+        loaded_model = PeftModel.from_pretrained(loaded_base, adapter_save_path)
         loaded_model.eval()
         loaded_model.config.use_cache = True
         if hasattr(loaded_model, "base_model"):

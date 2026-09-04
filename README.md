@@ -98,7 +98,9 @@ Benchmark: 329 examples (240 harmful, 89 benign). FIN-1 sourced from WildGuardMi
 │   ├── synthesize_ablations.py    # Generate ablation B/C training data
 │   ├── train_ablations.py         # Train ablation B/C LoRA adapters
 │   ├── evaluate_ablations.py      # Evaluate all 5 ablation conditions
-│   └── ablation_job.sh            # SLURM job script (Yale HPC / McCleary)
+│   ├── ablation_job.sh            # SLURM job script (Yale HPC / McCleary)
+│   ├── benchmark_latency.py       # Latency/throughput/GPU-memory benchmark (Conditions 0/B/D)
+│   └── benchmark_latency_job.sh   # SLURM job for the latency benchmark
 ├── fin/
 │   ├── fin_config.py              # Finance harm taxonomy, paths
 │   ├── build_benchmark.py         # Build 329-example finance benchmark
@@ -106,8 +108,19 @@ Benchmark: 329 examples (240 harmful, 89 benign). FIN-1 sourced from WildGuardMi
 │   ├── analyze_fin_results.py     # Metrics and LaTeX tables
 │   ├── fin_benchmark.jsonl        # Finance benchmark (329 examples, 7 categories)
 │   └── eval_job_fin.sh            # SLURM job for finance evaluation
+├── baselines/                     # Competitive-baseline comparisons (WildGuard, ShieldGemma, PromptGuard, prompted CoT)
+│   ├── common.py                  # Shared dataset loaders / result I/O
+│   ├── evaluate_wildguard.py      # allenai/wildguard (own conda env — see wildguard_job.sh)
+│   ├── evaluate_shieldgemma.py    # google/shieldgemma-{2b,9b,27b}
+│   ├── evaluate_promptguard.py    # meta-llama/Prompt-Guard-86M (CPU-friendly, no GPU needed)
+│   ├── evaluate_prompted_cot.py   # Zero-shot GPT-4o-mini CoT baseline (API only, no GPU needed)
+│   ├── aggregate_comparison.py    # Merge all baselines + Conditions 0/B/D into one report
+│   ├── baselines_job.sh           # SLURM job: ShieldGemma + PromptGuard
+│   ├── wildguard_job.sh           # SLURM job: WildGuard (separate conda env)
+│   └── run_prompted_cot.sh        # Local/login-node script: prompted-CoT baseline
 ├── analyze_results.py             # Compute metrics and generate reports
 ├── results/                       # Evaluation JSON outputs and reports
+│   └── baselines/                 # Competitive-baseline outputs ({model}_on_{dataset}.json)
 └── MDPI_Article_Template/
     └── reflect_guard_mdpi.tex     # Paper source (MDPI Journal of Superintelligence)
 ```

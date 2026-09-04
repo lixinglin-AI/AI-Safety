@@ -1,0 +1,38 @@
+==============================================================================
+COMPETITIVE BASELINE COMPARISON
+==============================================================================
+
+--- WildGuardTest ---
+Model                                              n    Acc   Prec    Rec     F1   AdvRec
+Llama-Guard-3-8B (clean baseline)               1699  0.825  0.919  0.663  0.770    0.513
+Reflect-Guard, SFT-only (Condition B)           1699  0.877  0.868  0.853  0.860    0.845
+Reflect-Guard (full, Condition D)               1699  0.856  0.821  0.863  0.842    0.921
+WildGuard                                       1699  0.903  0.926  0.850  0.887    0.827
+ShieldGemma-9b                                 NOT YET RUN (results/baselines/shieldgemma_on_wildguardtest.json)
+Llama-Prompt-Guard-2-86M                       NOT YET RUN (results/baselines/promptguard_on_wildguardtest.json)
+Prompt-Guard-86M (v1, reference only)           1699  0.461  0.450  0.959  0.612    0.909
+Prompted CoT (GPT-4o-mini, zero-shot)           1699  0.855  0.919  0.739  0.819    0.636
+
+--- JailbreakBench (all ground-truth harmful; report is detection rate = recall) ---
+Model                                              n  DR (recall)   GBR=1-DR
+Llama-Guard-3-8B (clean baseline)                282        0.897      0.103
+Reflect-Guard, SFT-only (Condition B)            282        1.000      0.000
+Reflect-Guard (full, Condition D)                282        0.982      0.018
+WildGuard                                        282        0.996      0.004
+ShieldGemma-9b                                 NOT YET RUN (results/baselines/shieldgemma_on_jailbreakbench.json)
+Llama-Prompt-Guard-2-86M                       NOT YET RUN (results/baselines/promptguard_on_jailbreakbench.json)
+Prompt-Guard-86M (v1, reference only)            282        0.993      0.007
+Prompted CoT (GPT-4o-mini, zero-shot)            282        0.968      0.032
+
+--- Finance benchmark (329 examples) ---
+Model                                              n    Acc   Prec    Rec     F1
+Llama-Guard-3-8B (clean baseline)                329  0.830  1.000  0.767  0.868
+Reflect-Guard (full, Condition D)                329  0.903  1.000  0.867  0.929
+WildGuard                                        329  0.894  1.000  0.854  0.921
+ShieldGemma-9b                                 NOT YET RUN (results/baselines/shieldgemma_on_finance.json)
+Llama-Prompt-Guard-2-86M                       NOT YET RUN (results/baselines/promptguard_on_finance.json)
+Prompt-Guard-86M (v1, reference only)            329  0.714  0.725  0.979  0.833
+Prompted CoT (GPT-4o-mini, zero-shot)            329  0.888  1.000  0.846  0.916
+
+NOTE: PromptGuard is not a general content-harm classifier (see baselines/evaluate_promptguard.py docstring) — its non-adversarial-subset and finance numbers are expected to be weak by design, not comparably worse.
+NOTE: ShieldGemma verdicts are a union over 4 per-policy scores, an adaptation to a single binary verdict it was not originally evaluated on (see baselines/evaluate_shieldgemma.py docstring).

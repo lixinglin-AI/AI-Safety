@@ -1,34 +1,81 @@
 #!/bin/bash
 #SBATCH --job-name=reflect_train_multiseed
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:a5000:1
+#SBATCH --partition=gpu_devel
+#SBATCH --account=pi_lg689
+#SBATCH --qos=normal
+#SBATCH --gres=gpu:a40:1
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=4
 #SBATCH --time=06:00:00
-#SBATCH --output=/vast/palmer/home.mccleary/ll2276/AI-Safety-Abuse/logs/train_multiseed_%j.out
+#SBATCH --output=logs/train_multiseed_%j.out
+
+# gpu_devel instead of scavenge_gpu: this account has no grant on the regular
+# `gpu` partition, and scavenge_gpu is preemptible — jobs were observed getting
+# PREEMPTED after 15-55 minutes in practice, before a single seed's training
+# could finish. gpu_devel is open to all accounts (AllowAccounts=ALL) and is NOT
+# preemptible (PreemptMode=OFF), at the cost of a hard 6-hour wall-time cap
+# (QOSMaxWallDurationPerJobLimit on the `normal` QOS there — 8h was rejected
+# outright, 4h was accepted). If this run doesn't finish in 6h, the
+# resume_from_checkpoint logic in train.py/train_ablations.py (save_steps=50)
+# means resubmitting the same command continues from the last checkpoint rather
+# than restarting — just `sbatch` this script again.
 
 module load miniconda
+source $(conda info --base)/etc/profile.d/conda.sh
 conda activate reflect_guard
 
-cd /vast/palmer/home.mccleary/ll2276/AI-Safety-Abuse
+cd "$HOME/AI-Safety-Abuse"
 
-# Train + evaluate 2 additional seeds for variance estimation.
-# The original default run (implicit seed=42 paths) is left untouched and is
-# reused as the third data point — no need to retrain it.
+# sbatch only inherits env vars exported in the submitting shell at submit time —
+# easy to forget between sessions. Fall back to .env if HF_TOKEN wasn't already
+# exported, so a forgotten `export HF_TOKEN=...` doesn't waste a queue slot.
+if [ -z "${HF_TOKEN:-}" ] && [ -f .env ]; then
+    set -a
+    source .env
+    set +a
+fi
+
+set -euo pipefail
+
+# Train + evaluate 2 additional seeds for Conditions B (SFT-only) and D
+# (Reflect-Guard) for statistical-significance testing. The original seed=42 run
+# is reused as-is (unsuffixed paths) rather than retrained — see
+# reflect_guard/train_ablations.py and main.py --seed for how paths are chosen.
+#
+# Covers WildGuardTest + JailbreakBench + finance for both conditions, so
+# reflect_guard/compute_seed_variance.py has everything it needs afterward,
+# including for the finance benchmark specifically (329 examples — the
+# reviewer-flagged case most sensitive to single-run noise).
 for SEED in 123 2024; do
-    echo "=== Seed $SEED: training ==="
-    python reflect_guard/main.py --skip-synthesis --train-only --seed "$SEED" --hf-token "$HF_TOKEN"
+    echo "============================================"
+    echo "SEED $SEED: train Condition B (SFT-only)"
+    echo "============================================"
+    python reflect_guard/train_ablations.py --ablation b --seed "$SEED" --hf-token "$HF_TOKEN"
 
-    echo "=== Seed $SEED: evaluating on WildGuardTest + JailbreakBench ==="
-    python reflect_guard/evaluate_reflect_guard.py --dataset both --seed "$SEED" --hf-token "$HF_TOKEN"
+    echo ""
+    echo "============================================"
+    echo "SEED $SEED: train Condition D (Reflect-Guard)"
+    echo "============================================"
+    python reflect_guard/main.py --skip-synthesis --train-only --skip-smoke-test --seed "$SEED" --hf-token "$HF_TOKEN"
+
+    echo ""
+    echo "============================================"
+    echo "SEED $SEED: evaluate Condition B on all 3 benchmarks"
+    echo "============================================"
+    python reflect_guard/evaluate_ablations.py --condition b --dataset all --seed "$SEED" --hf-token "$HF_TOKEN"
+
+    echo ""
+    echo "============================================"
+    echo "SEED $SEED: evaluate Condition D on all 3 benchmarks"
+    echo "============================================"
+    python reflect_guard/evaluate_ablations.py --condition d --dataset all --seed "$SEED" --hf-token "$HF_TOKEN"
 done
 
-echo "Done. Results:"
-echo "  results/wildguard_results_reflect.json        (original, seed=42)"
-echo "  results/wildguard_results_reflect_seed123.json"
-echo "  results/wildguard_results_reflect_seed2024.json"
-echo "  results/jailbreakbench_results_reflect.json        (original, seed=42)"
-echo "  results/jailbreakbench_results_reflect_seed123.json"
-echo "  results/jailbreakbench_results_reflect_seed2024.json"
-echo
-echo "Next: python reflect_guard/compute_seed_variance.py"
+echo ""
+echo "============================================"
+echo "Aggregating seed variance (42 + 123 + 2024)"
+echo "============================================"
+python reflect_guard/compute_seed_variance.py --seeds 42 123 2024 --dataset all
+
+echo ""
+echo "ALL DONE. See results/seed_variance_report.txt"

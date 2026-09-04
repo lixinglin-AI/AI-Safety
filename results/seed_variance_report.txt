@@ -1,0 +1,39 @@
+Seed-variance report (seeds=[42, 123, 2024], metric=recall)
+
+======================================================================
+WILDGUARD
+======================================================================
+
+Condition B (ablation_b), n_seeds=3
+  per-seed recall: seed42=0.8528, seed123=0.8634, seed2024=0.8727
+  mean +/- std: 0.8630 +/- 0.0100
+  pooled bootstrap 95% CI: [0.8340, 0.8915]  (test-set + seed variance combined, 3000 replicates)
+
+Condition D (reflect_guard), n_seeds=3
+  per-seed recall: seed42=0.8634, seed123=0.8475, seed2024=0.8568
+  mean +/- std: 0.8559 +/- 0.0080
+  pooled bootstrap 95% CI: [0.8266, 0.8840]  (test-set + seed variance combined, 3000 replicates)
+
+Paired D vs B significance test on recall across 3 common seeds [42, 123, 2024]:
+  paired t-test: t=-0.800, p=0.5076
+  Wilcoxon signed-rank: W=1.000, p=0.5000
+  NOTE: n=3 paired seeds is small; treat these p-values as indicative, not definitive — see module docstring.
+
+======================================================================
+WILDGUARD (adversarial)
+======================================================================
+
+Condition B (ablation_b), n_seeds=3
+  per-seed recall: seed42=0.8446, seed123=0.8328, seed2024=0.8504
+  mean +/- std: 0.8426 +/- 0.0090
+  pooled bootstrap 95% CI: [0.8000, 0.8833]  (test-set + seed variance combined, 3000 replicates)
+
+Condition D (reflect_guard), n_seeds=3
+  per-seed recall: seed42=0.9208, seed123=0.8768, seed2024=0.9032
+  mean +/- std: 0.9003 +/- 0.0221
+  pooled bootstrap 95% CI: [0.8500, 0.9408]  (test-set + seed variance combined, 3000 replicates)
+
+Paired D vs B significance test on recall across 3 common seeds [42, 123, 2024]:
+  paired t-test: t=5.991, p=0.0268
+  Wilcoxon signed-rank: W=0.000, p=0.2500
+  NOTE: n=3 paired seeds is small; treat these p-values as indicative, not definitive — see module docstring.

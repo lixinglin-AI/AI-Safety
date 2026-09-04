@@ -7,6 +7,7 @@ Uses the same hyperparameters and LoRA config as the main Reflect-Guard training
 """
 
 import gc
+import glob
 import json
 import os
 import sys
@@ -98,6 +99,16 @@ def format_dataset(records: list[dict], tokenizer) -> Dataset:
     return train_dataset
 
 
+def seeded_path(base_path: str, seed: int | None) -> str:
+    """Suffix an adapter/checkpoint path with _seed{N}, unless seed is the default
+    (42, matching config.RANDOM_SEED) or unset — the existing unsuffixed adapter
+    from the original run already IS the seed=42 data point, so it's reused as-is
+    rather than retrained, matching reflect_guard/train_multiseed_job.sh's design."""
+    if seed is None or seed == 42:
+        return base_path
+    return f"{base_path}_seed{seed}"
+
+
 def train_adapter(records, tokenizer, model, output_dir, adapter_path):
     train_dataset = format_dataset(records, tokenizer)
 
@@ -115,7 +126,7 @@ def train_adapter(records, tokenizer, model, output_dir, adapter_path):
         learning_rate=LEARNING_RATE,
         bf16=True,
         logging_steps=5,
-        save_steps=200,
+        save_steps=50,
         save_total_limit=2,
         dataset_text_field="text",
         report_to="none",
@@ -129,8 +140,15 @@ def train_adapter(records, tokenizer, model, output_dir, adapter_path):
         args=training_args,
     )
 
+    # scavenge_gpu is preemptible and jobs get killed mid-training in practice
+    # (observed: several runs PREEMPTED after 15-55 minutes) — resume from the
+    # latest checkpoint in output_dir if one exists (save_steps=50 above), so a
+    # requeued job continues instead of restarting from step 0.
+    resume = bool(glob.glob(os.path.join(output_dir, "checkpoint-*")))
+    if resume:
+        print(f"Found existing checkpoint(s) in {output_dir}, resuming training from the latest one.")
     print(f"Training on {len(train_dataset)} examples x {NUM_EPOCHS} epochs...")
-    trainer.train()
+    trainer.train(resume_from_checkpoint=resume)
 
     os.makedirs(adapter_path, exist_ok=True)
     trainer.model.save_pretrained(adapter_path)
@@ -149,19 +167,31 @@ def main():
     parser.add_argument("--ablation", choices=["b", "c", "both"], default="both",
                         help="Which ablation to train")
     parser.add_argument("--hf-token", default=None)
+    parser.add_argument("--seed", type=int, default=42,
+                         help="Random seed for weight init and data-loader shuffling "
+                              "(transformers.set_seed). 42 is the original run's implicit "
+                              "seed and writes to the default (unsuffixed) adapter path; any "
+                              "other value writes to {adapter_path}_seed{N} instead, so "
+                              "additional seeds for statistical-significance testing "
+                              "(reflect_guard/compute_seed_variance.py) don't overwrite it.")
     args = parser.parse_args()
+
+    from transformers import set_seed
+    set_seed(args.seed)
 
     hf_token = args.hf_token or os.environ.get("HF_TOKEN") or getpass.getpass("HF token: ").strip()
     login(token=hf_token)
 
     if args.ablation in ("b", "both"):
         print("\n" + "=" * 60)
-        print("TRAINING ABLATION B: SFT Labels Only (no reflection)")
+        print(f"TRAINING ABLATION B: SFT Labels Only (no reflection), seed={args.seed}")
         print("=" * 60)
         records_b = load_dataset_from_disk(ABLATION_B_DATASET_PATH)
         model, tokenizer = load_model_and_tokenizer(hf_token)
         model = apply_lora(model)
-        train_adapter(records_b, tokenizer, model, ABLATION_B_CKPT_DIR, ABLATION_B_ADAPTER_PATH)
+        adapter_path = seeded_path(ABLATION_B_ADAPTER_PATH, args.seed)
+        ckpt_dir = seeded_path(ABLATION_B_CKPT_DIR, args.seed)
+        train_adapter(records_b, tokenizer, model, ckpt_dir, adapter_path)
         # Free GPU memory before next training
         del model
         gc.collect()
@@ -169,12 +199,14 @@ def main():
 
     if args.ablation in ("c", "both"):
         print("\n" + "=" * 60)
-        print("TRAINING ABLATION C: Blind Teacher Reflections")
+        print(f"TRAINING ABLATION C: Blind Teacher Reflections, seed={args.seed}")
         print("=" * 60)
         records_c = load_dataset_from_disk(ABLATION_C_DATASET_PATH)
         model, tokenizer = load_model_and_tokenizer(hf_token)
         model = apply_lora(model)
-        train_adapter(records_c, tokenizer, model, ABLATION_C_CKPT_DIR, ABLATION_C_ADAPTER_PATH)
+        adapter_path = seeded_path(ABLATION_C_ADAPTER_PATH, args.seed)
+        ckpt_dir = seeded_path(ABLATION_C_CKPT_DIR, args.seed)
+        train_adapter(records_c, tokenizer, model, ckpt_dir, adapter_path)
 
 
 if __name__ == "__main__":

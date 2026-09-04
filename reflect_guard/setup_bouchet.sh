@@ -21,13 +21,17 @@ pip install --upgrade pip
 pip install \
     torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
+# Exact versions below are verified working end-to-end on Bouchet (training +
+# all five ablation conditions). See requirements.txt for why each is pinned
+# where it is (rope_scaling parsing, SFTConfig availability, bnb dispatch, etc.)
+# — do not loosen these without re-verifying on an actual GPU job.
 pip install \
-    transformers==4.40.0 \
-    peft==0.10.0 \
+    transformers==4.44.2 \
+    peft>=0.12.0 \
     bitsandbytes==0.43.1 \
     datasets==2.19.0 \
-    accelerate==0.29.3 \
-    trl==0.8.6 \
+    accelerate==0.33.0 \
+    trl==0.9.6 \
     openai \
     scikit-learn \
     sentencepiece \

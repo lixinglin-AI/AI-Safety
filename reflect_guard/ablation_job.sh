@@ -1,6 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=reflect-ablation
-#SBATCH --partition=gpu
+#SBATCH --partition=scavenge_gpu
+#SBATCH --account=pi_lg689
+#SBATCH --qos=normal
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G

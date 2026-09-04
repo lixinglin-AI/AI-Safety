@@ -38,14 +38,11 @@ from config import (
     LLAMAGUARD_STANDARD_INSTRUCTION,
 )
 from utils.llama_guard import parse_label, parse_reflection, parse_violated_categories
+from utils.jailbreakbench_loader import load_jailbreakbench_artifacts
 
-RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
-
-JBB_METHODS = [
-    "PAIR", "GCG", "AutoDAN", "TAP", "JBC",
-    "PAP-top5", "DrAttack", "Persuasive", "Persuasive+Jailbreak",
-]
-JBB_TARGET_MODEL = "vicuna-13b-v1.5"
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RESULTS_DIR = os.path.join(ROOT_DIR, "results")
+FIN_BENCHMARK_PATH = os.path.join(ROOT_DIR, "fin", "fin_benchmark.jsonl")
 
 # Condition definitions: (name, adapter_path, instruction_template, max_new_tokens)
 CONDITIONS = {
@@ -75,8 +72,17 @@ def load_base_model(hf_token: str):
     return model, tokenizer
 
 
-def load_model_for_condition(condition_key: str, hf_token: str):
+def load_model_for_condition(condition_key: str, hf_token: str, seed: int = 42):
     name, adapter_path, instruction, max_tokens = CONDITIONS[condition_key]
+
+    # Conditions b/c/d have a trained adapter and thus a seed-dependent checkpoint;
+    # 0/a are training-free (deterministic base model, greedy decoding) so seed is
+    # a no-op for them. 42 is the original run's seed — reuse its unsuffixed
+    # adapter/result-file paths as-is rather than requiring a redundant retrain.
+    if adapter_path is not None and seed != 42:
+        adapter_path = f"{adapter_path}_seed{seed}"
+        name = f"{name}_seed{seed}"
+
     print(f"\nLoading model for condition: {name}")
 
     model, tokenizer = load_base_model(hf_token)
@@ -116,8 +122,11 @@ def classify(prompt: str, model, tokenizer, instruction: str, max_new_tokens: in
     return tokenizer.decode(out[0][input_ids.shape[-1]:], skip_special_tokens=True).strip()
 
 
-def evaluate_wildguard(model, tokenizer, instruction, max_tokens, condition_name, hf_token):
+def evaluate_wildguard(model, tokenizer, instruction, max_tokens, condition_name, hf_token, force=False):
     output_path = os.path.join(RESULTS_DIR, f"wildguard_results_{condition_name}.json")
+    if os.path.exists(output_path) and not force:
+        print(f"\n[skip] {output_path} already exists (pass --force to re-evaluate).")
+        return
 
     print(f"\nEvaluating WildGuardTest for condition: {condition_name}")
     ds = load_dataset("allenai/wildguardmix", "wildguardtest", token=hf_token)
@@ -154,35 +163,59 @@ def evaluate_wildguard(model, tokenizer, instruction, max_tokens, condition_name
     print(f"  {len(results)} results saved to {output_path}")
 
 
-def evaluate_jailbreakbench(model, tokenizer, instruction, max_tokens, condition_name):
-    output_path = os.path.join(RESULTS_DIR, f"jailbreakbench_results_{condition_name}.json")
+def evaluate_finance(model, tokenizer, instruction, max_tokens, condition_name, force=False):
+    output_path = os.path.join(RESULTS_DIR, f"fin_results_{condition_name}.json")
+    if os.path.exists(output_path) and not force:
+        print(f"\n[skip] {output_path} already exists (pass --force to re-evaluate).")
+        return
 
-    try:
-        import jailbreakbench as jbb
-    except ImportError:
-        print("ERROR: jailbreakbench not installed.", file=sys.stderr)
+    if not os.path.exists(FIN_BENCHMARK_PATH):
+        print(f"ERROR: finance benchmark not found at {FIN_BENCHMARK_PATH}. "
+              "Run fin/build_benchmark.py first.", file=sys.stderr)
+        return
+
+    print(f"\nEvaluating finance benchmark for condition: {condition_name}")
+    rows = []
+    with open(FIN_BENCHMARK_PATH) as f:
+        for line in f:
+            rows.append(json.loads(line))
+    print(f"  {len(rows)} examples")
+
+    results = []
+    for row in tqdm(rows, desc=f"Finance ({condition_name})"):
+        try:
+            raw = classify(row["prompt"], model, tokenizer, instruction, max_tokens)
+        except Exception as e:
+            print(f"\nError: {e}", file=sys.stderr)
+            raw = "error"
+
+        results.append({
+            "prompt": row["prompt"],
+            "ground_truth": row["label"],
+            "predicted": parse_label(raw),
+            "raw_output": raw,
+            "reflection": parse_reflection(raw),
+            "violated_categories": parse_violated_categories(raw),
+            "category": row["category"],
+            "source": row["source"],
+            "subcategory": row["subcategory"],
+            "adversarial": row.get("adversarial", False),
+        })
+
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    with open(output_path, "w") as f:
+        json.dump(results, f, indent=2)
+    print(f"  {len(results)} results saved to {output_path}")
+
+
+def evaluate_jailbreakbench(model, tokenizer, instruction, max_tokens, condition_name, force=False):
+    output_path = os.path.join(RESULTS_DIR, f"jailbreakbench_results_{condition_name}.json")
+    if os.path.exists(output_path) and not force:
+        print(f"\n[skip] {output_path} already exists (pass --force to re-evaluate).")
         return
 
     print(f"\nEvaluating JailbreakBench for condition: {condition_name}")
-    all_entries = []
-    for method in JBB_METHODS:
-        try:
-            artifact = jbb.read_artifact(method=method, model_name=JBB_TARGET_MODEL)
-            entries = []
-            for jb in artifact.jailbreaks:
-                if jb.prompt is None:
-                    continue
-                entries.append({
-                    "method": method,
-                    "behavior_id": getattr(jb, "behavior_id", None),
-                    "behavior": getattr(jb, "goal", None) or getattr(jb, "behavior", None),
-                    "prompt": jb.prompt,
-                    "jbb_success": getattr(jb, "jailbroken", None),
-                })
-            all_entries.extend(entries)
-            print(f"  {method}: {len(entries)} prompts")
-        except Exception as e:
-            print(f"  Skipping '{method}': {e}", file=sys.stderr)
+    all_entries = load_jailbreakbench_artifacts()
 
     if not all_entries:
         print("No JBB prompts loaded.", file=sys.stderr)
@@ -220,9 +253,21 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate ablation conditions")
     parser.add_argument("--condition", default="all",
                         help="Condition to evaluate: 0, a, b, c, d, or all")
-    parser.add_argument("--dataset", choices=["wildguard", "jailbreakbench", "both"],
-                        default="both")
+    parser.add_argument("--dataset", choices=["wildguard", "jailbreakbench", "finance", "both", "all"],
+                        default="both",
+                        help="'both' = wildguard+jailbreakbench (original behavior); "
+                             "'all' = wildguard+jailbreakbench+finance")
     parser.add_argument("--hf-token", default=None)
+    parser.add_argument("--seed", type=int, default=42,
+                         help="Which trained seed's adapter to evaluate for conditions b/c/d "
+                              "(42 = original run, unsuffixed paths; other values expect "
+                              "{adapter}_seed{N} to already exist from train_ablations.py/"
+                              "main.py --seed {N}). No effect on conditions 0/a.")
+    parser.add_argument("--force", action="store_true",
+                         help="Re-evaluate even if a results file already exists (default: skip "
+                              "any dataset whose output file is already on disk, and skip loading "
+                              "the model entirely if every requested dataset for this condition is "
+                              "already done — useful after a preempted/requeued job).")
     args = parser.parse_args()
 
     hf_token = (args.hf_token or os.environ.get("HF_TOKEN")
@@ -230,19 +275,39 @@ def main():
     login(token=hf_token)
 
     conditions = list(CONDITIONS.keys()) if args.condition == "all" else [args.condition]
+    datasets = {"both": ["wildguard", "jailbreakbench"], "all": ["wildguard", "jailbreakbench", "finance"]}.get(
+        args.dataset, [args.dataset])
 
     for cond in conditions:
         if cond not in CONDITIONS:
             print(f"Unknown condition: {cond}", file=sys.stderr)
             continue
 
-        model, tokenizer, instruction, max_tokens, name = load_model_for_condition(cond, hf_token)
+        # Compute the seed-suffixed condition name up front (mirrors
+        # load_model_for_condition's own logic) so we can skip loading the
+        # ~5GB model entirely if every requested dataset is already evaluated.
+        base_name, adapter_path, _, _ = CONDITIONS[cond]
+        name_preview = f"{base_name}_seed{args.seed}" if (adapter_path is not None and args.seed != 42) else base_name
+        out_paths = {
+            "wildguard": os.path.join(RESULTS_DIR, f"wildguard_results_{name_preview}.json"),
+            "jailbreakbench": os.path.join(RESULTS_DIR, f"jailbreakbench_results_{name_preview}.json"),
+            "finance": os.path.join(RESULTS_DIR, f"fin_results_{name_preview}.json"),
+        }
+        if not args.force and all(os.path.exists(out_paths[d]) for d in datasets):
+            print(f"\n[skip] Condition {cond} ({name_preview}): all requested datasets already "
+                  "evaluated, not loading model. Pass --force to re-run.")
+            continue
 
-        if args.dataset in ("wildguard", "both"):
-            evaluate_wildguard(model, tokenizer, instruction, max_tokens, name, hf_token)
+        model, tokenizer, instruction, max_tokens, name = load_model_for_condition(cond, hf_token, args.seed)
 
-        if args.dataset in ("jailbreakbench", "both"):
-            evaluate_jailbreakbench(model, tokenizer, instruction, max_tokens, name)
+        if "wildguard" in datasets:
+            evaluate_wildguard(model, tokenizer, instruction, max_tokens, name, hf_token, args.force)
+
+        if "jailbreakbench" in datasets:
+            evaluate_jailbreakbench(model, tokenizer, instruction, max_tokens, name, args.force)
+
+        if "finance" in datasets:
+            evaluate_finance(model, tokenizer, instruction, max_tokens, name, args.force)
 
         # Free GPU memory before next condition
         del model

@@ -2,10 +2,10 @@
 Baseline Confusion Matrix
 ==================================================
                Pred Harmful  Pred Unharmful
-  GT Harmful         463            291
-  GT Unharmful        34            911
-  TP=463  FP=34  FN=291  TN=911
-  Precision=0.9316  Recall=0.6141  F1=0.7402
+  GT Harmful         500            254
+  GT Unharmful        44            901
+  TP=500  FP=44  FN=254  TN=901
+  Precision=0.9191  Recall=0.6631  F1=0.7704
 
 ==================================================
 Reflect-Guard Confusion Matrix
@@ -21,11 +21,11 @@ ADVERSARIAL vs NON-ADVERSARIAL BREAKDOWN
 ==================================================
 
 --- Adversarial (n=796) ---
-  Baseline         acc=0.732  prec=0.872  rec=0.440  F1=0.585  (TP=150 FP=22 FN=191 TN=433)
+  Baseline         acc=0.751  prec=0.845  rec=0.513  F1=0.639  (TP=175 FP=32 FN=166 TN=423)
   Reflect-Guard    acc=0.805  prec=0.710  rec=0.921  F1=0.802  (TP=314 FP=128 FN=27 TN=327)
 
 --- Non-Adversarial (n=903) ---
-  Baseline         acc=0.876  prec=0.963  rec=0.758  F1=0.848  (TP=313 FP=12 FN=100 TN=478)
+  Baseline         acc=0.889  prec=0.964  rec=0.787  F1=0.867  (TP=325 FP=12 FN=88 TN=478)
   Reflect-Guard    acc=0.900  prec=0.960  rec=0.816  F1=0.882  (TP=337 FP=14 FN=76 TN=476)
 
 ==================================================

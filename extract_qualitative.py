@@ -11,7 +11,11 @@ import os
 from collections import Counter
 
 RESULTS_DIR = "results"
-BASELINE_PATH = os.path.join(RESULTS_DIR, "wildguard_results_baseline.json")
+# NOTE: must match Condition 0 in the ablation study / main paper tables.
+# "wildguard_results_baseline.json" is a stale, different baseline run (see
+# reflect_guard_mdpi-2.tex Section 7.1 / error-analysis regeneration) and
+# must not be used here.
+BASELINE_PATH = os.path.join(RESULTS_DIR, "wildguard_results_clean_baseline.json")
 REFLECT_PATH = os.path.join(RESULTS_DIR, "wildguard_results_reflect.json")
 JBB_REFLECT_PATH = os.path.join(RESULTS_DIR, "jailbreakbench_results_reflect.json")
 

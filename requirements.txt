@@ -1,16 +1,46 @@
 datasets
-jailbreakbench
 requests
 scikit-learn
 pandas
 tqdm
 python-dotenv
 huggingface_hub
+openai
 # Reflect-Guard finetuning
 anthropic
-trl>=0.11.0
+# Exact pins below are the versions actually verified working end-to-end on the
+# Bouchet HPC cluster (training + all five ablation conditions). Do NOT loosen
+# these casually:
+#   - trl must stay <0.11.0: an unbounded `pip install --upgrade "trl>=0.11.0"`
+#     cascades a transformers upgrade that requires torch>=2.5, breaking the
+#     pinned cu118 torch build below (see trl==0.9.6 note).
+#   - trl>=0.9.6 is required for SFTConfig (trl==0.8.6 lacks it).
+#   - transformers>=4.44.2 is required to parse Llama 3.1's rope_scaling config
+#     (4.40.0 raises "rope_scaling must be a dictionary with two fields...");
+#     pin below 5.x to avoid pulling in a torch>=2.5 requirement.
+#   - accelerate==0.33.0 is required for 4-bit/8-bit bitsandbytes model dispatch
+#     (accelerate==0.29.3 raises "`.to` is not supported for 4-bit or 8-bit
+#     bitsandbytes models").
+#   - torch==2.2.0 (cu118 build) is pinned to a known-good CUDA build; this caps
+#     the supported GPU compute capability at sm_90 (Hopper/H100), so SLURM jobs
+#     must request A40/L40S/H100 GPUs explicitly, not Blackwell (sm_120). The
+#     cu118 wheel is NOT on plain PyPI — install it separately BEFORE this file:
+#       pip install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+#     then `pip install -r requirements.txt` (see reflect_guard/setup_bouchet.sh
+#     for the full sequence this was verified against).
+trl==0.9.6
 peft>=0.12.0
-bitsandbytes>=0.43.0
-torch>=2.3.0
-transformers>=4.44.0
-accelerate>=0.30.0
+bitsandbytes>=0.43.1
+transformers==4.44.2
+accelerate==0.33.0
+# Competitive baselines (baselines/): install `wildguard` in a SEPARATE conda env,
+# see baselines/wildguard_job.sh — its vllm dependency can conflict with the
+# bitsandbytes/peft pins above.
+#
+# NOTE: the `jailbreakbench` PyPI package is intentionally NOT listed above.
+# JailbreakBench prompts are fetched directly over HTTP by
+# utils/jailbreakbench_loader.py instead — see that module's docstring. The
+# `jailbreakbench` package pulls in `litellm`, which both conflicts with vllm's
+# transformers/protobuf pins and (in recently resolved versions) references
+# internal litellm modules that no longer exist, breaking `import jailbreakbench`
+# outright regardless of what else is installed.

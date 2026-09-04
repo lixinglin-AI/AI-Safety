@@ -25,14 +25,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # reflect_guard/
 
 from config import MODEL_ID, ADAPTER_SAVE_PATH, LLAMAGUARD_COT_INSTRUCTION
 from utils.llama_guard import parse_label, parse_reflection, parse_violated_categories
+from utils.jailbreakbench_loader import load_jailbreakbench_artifacts
 
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
-
-JBB_METHODS = [
-    "PAIR", "GCG", "AutoDAN", "TAP", "JBC",
-    "PAP-top5", "DrAttack", "Persuasive", "Persuasive+Jailbreak",
-]
-JBB_TARGET_MODEL = "vicuna-13b-v1.5"
 
 
 def load_model(hf_token: str):
@@ -127,32 +122,8 @@ def evaluate_wildguard(model, tokenizer, hf_token: str):
 def evaluate_jailbreakbench(model, tokenizer):
     output_path = os.path.join(RESULTS_DIR, "jailbreakbench_results_reflect.json")
 
-    try:
-        import jailbreakbench as jbb
-    except ImportError:
-        print("ERROR: jailbreakbench not installed. Run: pip install jailbreakbench", file=sys.stderr)
-        sys.exit(1)
-
     print("Loading JailbreakBench artifacts...")
-    all_entries = []
-    for method in JBB_METHODS:
-        try:
-            artifact = jbb.read_artifact(method=method, model_name=JBB_TARGET_MODEL)
-            entries = []
-            for jb in artifact.jailbreaks:
-                if jb.prompt is None:
-                    continue
-                entries.append({
-                    "method": method,
-                    "behavior_id": getattr(jb, "behavior_id", None),
-                    "behavior": getattr(jb, "goal", None) or getattr(jb, "behavior", None),
-                    "prompt": jb.prompt,
-                    "jbb_success": getattr(jb, "jailbroken", None),
-                })
-            all_entries.extend(entries)
-            print(f"  {method}: {len(entries)} prompts loaded")
-        except Exception as e:
-            print(f"  Skipping method '{method}': {e}", file=sys.stderr)
+    all_entries = load_jailbreakbench_artifacts()
 
     if not all_entries:
         print("No JBB prompts loaded.", file=sys.stderr)
