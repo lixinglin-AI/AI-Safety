@@ -1,0 +1,48 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{parskip}
+\usepackage{setspace}
+
+\onehalfspacing
+
+\begin{document}
+
+\noindent
+Editorial Board\\
+MDPI Superintelligence
+\vspace{0.5cm}
+
+\noindent
+Dear Editors,
+
+\vspace{0.5cm}
+
+
+We are pleased to submit our manuscript entitled 
+\textit{``Reflect-Guard: Enhancing LLM Safeguards against Adversarial Prompts via Logical Self-Reflection''} 
+for consideration for publication in \textit{Journal of Superintelligence}.
+
+Large language model (LLM) safety classifiers have become an important component of responsible AI deployment. However, existing classifiers remain vulnerable to adversarial jailbreak attacks, especially when harmful intent is disguised through role-play scenarios, fictional framing, indirect requests, or obfuscated language. In this work, we propose \textit{Reflect-Guard}, a reflection-augmented safety classification framework that improves jailbreak detection by enabling the classifier to generate structured self-reflection before issuing safety judgments.
+
+Our method distills analytical reasoning from GPT-4o-mini into structured reflection annotations and fine-tunes Llama-Guard-3-8B using QLoRA. With only 1,000 training examples and approximately 0.5\% of model parameters updated, Reflect-Guard achieves substantial improvements on two challenging benchmarks. On WildGuardTest, the F1 score improves from 0.770 to 0.842, while recall on adversarial prompts increases from 0.513 to 0.921. On JailbreakBench, the attack success rate decreases from 10.3\% to 1.8\%, representing an 82.5\% relative reduction. These results suggest that teaching safety classifiers to reason explicitly about adversarial intent can improve robustness beyond surface-level pattern matching.
+
+To further evaluate cross-domain generalization, we test the same checkpoint without any additional fine-tuning on a curated benchmark of 329 high-risk financial instructions spanning seven harm categories, including fraud, market manipulation, money laundering, and related financial crimes. Reflect-Guard improves F1 from 0.868 to 0.929 and recall from 0.767 to 0.867 over the baseline, while maintaining zero false positives on benign financial queries. These findings suggest that reflection-based safety reasoning can transfer to an unseen high-risk domain without retraining.
+
+We believe this manuscript is well suited for the \textit{Journal of Superintelligence}, as it addresses timely questions in LLM safety, adversarial robustness, trustworthy AI, parameter-efficient fine-tuning, safety evaluation, and the responsible deployment of advanced AI systems. The study contributes a lightweight and reproducible approach for improving safety classifiers under jailbreak conditions and demonstrates its potential generalization to high-risk financial scenarios. We believe this topic may be of interest to researchers working on AI safety, natural language processing, trustworthy AI, and superintelligence alignment.
+
+This manuscript is original, has not been published previously, and is not currently under consideration for publication elsewhere. All authors have approved the submission of this manuscript. The authors declare no competing interests. The views expressed in this manuscript are those of the authors and do not necessarily reflect the views of their affiliated institutions.
+
+Thank you for considering our manuscript. We appreciate your time and look forward to your response.
+
+
+Sincerely,\\
+Luyun Lin\\
+Corresponding Author\\
+Email: lly936368767@gmail.com\\[1em]
+
+On behalf of all authors:\\
+Lixing Lin, Juli You, Yue Li, Luyun Lin, Yiqing Wang, Zhen Zhang, and Moxuan Zheng
+
+
+
+\end{document}
