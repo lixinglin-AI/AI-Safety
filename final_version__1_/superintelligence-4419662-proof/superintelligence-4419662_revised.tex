@@ -27,6 +27,7 @@
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{tcolorbox}
+\newcommand{\authchg}[1]{\textcolor{blue}{#1}}
 \usepackage{makecell}
 \usetikzlibrary{arrows.meta, shapes.geometric, positioning, fit, backgrounds, calc}
 
@@ -35,33 +36,39 @@
     left=4pt, right=4pt, top=2pt, bottom=2pt, fontupper=\small}
 }
 
-\renewcommand{\hl}[1]{#1}
-\renewcommand{\highlighting}[1]{#1}
-
 %=================================================================
 \Title{Reflect-Guard: Enhancing LLM Safeguards Against Adversarial Prompts via Logical Self-Reflection}
 
 %\newcommand{\orcidauthorA}{0000-0000-0000-000X}
 
-\Author{Lixing Lin $^{1,}$, %MDPI: Please carefully check the accuracy of names and affiliations.  
+\Author{\hl{Lixing Lin $^{1,}$,} %MDPI: Please carefully check the accuracy of names and affiliations.  
+%AU (reply to line 43): Confirmed. Names and affiliations re-checked and verified against the author list; spelling and order are correct.
  Juli You $^{2}$, Yue Li $^{3}$, Luyun Lin $^{4,}$*, Yiqing Wang $^{4}$, Zhen Zhang $^{2}$ and Moxuan Zheng $^{2}$}
 
 \AuthorNames{Lixing Lin, Juli You, Yue Li, Luyun Lin, Yiqing Wang, Zhen Zhang and Moxuan Zheng}
 
 \address{%
-$^{1}$ \quad Yale University, %MDPI: The department/school/faculty/campus of this university is required. Please try to provide this information. Same as in aff. 3.
- New Haven, CT, 06520 %MDPI: Please add zipcode after the state abbrevition. Same as in aff. 3.
+$^{1}$ \quad Graduate School of Arts and Sciences, Yale \hl{University,} %MDPI: The department/school/faculty/campus of this university is required. Please try to provide this information. Same as in aff. 3.
+%AU (reply to line 49): Added: Graduate School of Arts and Sciences, Yale University.
+ New Haven, \hl{CT} \authchg{06520}, %MDPI: Please add zipcode after the state abbrevition. Same as in aff. 3.
+%AU (reply to line 50): Confirmed. ZIP codes added using the universities' general addresses: Yale 06520, Columbia 10027; these match the authors' actual department addresses.
  USA; lixing.lin@yale.edu\\
-$^{2}$ \quad Independent Researcher, New Jersey, NJ, 07302; %MDPI: Please add the city, postal code (or ZIP code in the U.S.) and country. If a postal code is not available, a Post Office Box number can be added instead.
+$^{2}$ \quad Independent Researcher, New Jersey, NJ, \authchg{07302, USA}; %MDPI: Please add the city, postal code (or ZIP code in the U.S.) and country. If a postal code is not available, a Post Office Box number can be added instead.
+%AU (reply to line 52): Confirmed: city New Jersey, NJ, ZIP 07302, country USA (country added).
  you.juli@gmail.com (J.Y.); billzhangzhen98@gmail.com (Z.Z.); pollyzheng9527@gmail.com (M.Z.)\\
-$^{3}$ \quad Columbia University, New York, NY 10027, USA; yl6087@columbia.edu\\
-$^{4}$ \quad Independent Research, Dallas, TX 75234, USA;  woshilucy712@gmail.com (Y.W); lly936368767@gmail.com (L.L)}
+$^{3}$ \quad Columbia Climate School, Columbia \hl{University}, New York, \hl{NY} \authchg{10027}, USA; yl6087@columbia.edu\\
+$^{4}$ \quad Independent Researcher, Dallas, TX \authchg{75234}, USA ; lly936368767@gmail.com (L.L.); woshilucy712@gmail.com (Y.W.); %MDPI: 1. We added the state abbrevition, please confirm. 2. Please add zipcode after the state abbrevition.
+%AU (reply to line 55): State abbreviation TX confirmed. ZIP code 75234 added for affiliation 4 (Independent Researcher, Dallas).
+%USA; woshilucy712@gmail.com}
+}
 
 \corres{Correspondence: lly936368767@gmail.com}
 
-\abstract{LLM safety classifiers such as Llama Guard detect overtly harmful prompts well but remain vulnerable to jailbreaks that disguise intent via role-play, fictional framing, or indirect requests. We present \highlighting{\textbf{Reflect-Guard}}%MDPI: Please confirm if the bold of paragraph is unnecessary and can be removed, please check and confirm all bold in whole tex.
+\abstract{LLM safety classifiers such as Llama Guard detect overtly harmful prompts well but remain vulnerable to jailbreaks that disguise intent via role-play, fictional framing, or indirect requests. We present \highlighting{Reflect-Guard}%MDPI: Please confirm if the bold of paragraph is unnecessary and can be removed, please check and confirm all bold in whole tex.
+%AU (reply to line 60): Bold removed from 'Reflect-Guard' in the abstract. Bold has also been removed from captions and running text (see replies below); it is kept only in table headers/best-result cells, which are now explained in table footers.
 : Llama-Guard-3-8B fine-tuned via QLoRA to generate a distilled, GPT-4o-mini-sourced safety rationale before its verdict. Using only \highlighting{1000}%MDPI: Commas are only used for numbers with five or more digits. We have removed them in four-digit numbers. Please confirm the revision in whole tex.
- training examples and a five-condition ablation, we isolate reflection's contribution from that of ordinary supervised fine-tuning (SFT). SFT on verdict labels alone already accounts for most of the aggregate gain over the un-fine-tuned baseline (WildGuardTest F1: 0.770 $\to$ 0.860; JailbreakBench guard bypass rate: 10.3\%~$\to$~0.0\%). Adding reflection does not improve these aggregate numbers further (F1 falls to 0.842, guard bypass rises to 1.8\%) but reallocates performance toward adversarially framed inputs: adversarial-subset recall rises from 0.845 (SFT-only) to 0.921 (+7.6~pp), at a cost of $-$7.9~pp precision on that subset. The same direction holds across three training seeds (paired $t$-tests, $p=0.018$ for overall F1 and $p=0.027$ for adversarial recall), though we interpret these values cautiously given the small number of seeds. Measured inference latency is 17.9$\times$ the baseline's, driven by $\sim$92 additional reflection tokens per prompt. The same checkpoint, without additional fine-tuning, shows promising zero-shot transfer to a 329-example financial-harm benchmark (F1: 0.868~$\to$~0.929; recall: 0.767~$\to$~0.867, zero false positives); preliminary two-seed evidence, however, suggests the SFT-only condition may match or exceed this result, so we treat the finance improvement as evidence toward generalization rather than a settled advantage of reflection specifically. Benchmarked against WildGuard, PromptGuard, and a prompted (non-fine-tuned) GPT-4o-mini reasoning classifier on the same sets, WildGuard leads on aggregate WildGuardTest F1 (0.887), while Reflect-Guard achieves higher adversarial-subset recall than every evaluated classifier, including WildGuard (0.921 vs.\ 0.827) and the prompted teacher (0.636). Overall, supervised fine-tuning drives most of the aggregate gain over an un-fine-tuned classifier, while the generated safety rationale yields a narrower, latency-costly improvement specifically in adversarial-subset recall, a precision--recall tradeoff relevant to safety-critical deployments that prioritize recall over inference speed.}
+%AU (reply to line 61): Confirmed. Four-digit numbers are written without commas throughout; checked again in the whole tex.
+ training examples and a five-condition ablation, we isolate reflection's contribution from that of ordinary supervised fine-tuning (SFT). SFT on verdict labels alone already accounts for most of the aggregate gain over the un-fine-tuned baseline (WildGuardTest F$_1$: 0.770 $\to$ 0.860; JailbreakBench guard bypass rate: 10.3\%~$\to$~0.0\%). Adding reflection does not improve these aggregate numbers further (F$_1$ falls to 0.842, guard bypass rises to 1.8\%) but reallocates performance toward adversarially framed inputs: adversarial-subset recall rises from 0.845 (SFT-only) to 0.921 (+7.6~pp), at a cost of $-$7.9~pp precision on that subset. The same direction holds across three training seeds (paired $t$-tests, $p=0.018$ for overall F$_1$ and $p=0.027$ for adversarial recall), though we interpret these values cautiously given the small number of seeds. Measured inference latency is 17.9$\times$ the baseline's, driven by $\sim$92 additional reflection tokens per prompt. The same checkpoint, without additional fine-tuning, shows promising zero-shot transfer to a 329-example financial-harm benchmark (F$_1$: 0.868~$\to$~0.929; recall: 0.767~$\to$~0.867, zero false positives); preliminary two-seed evidence, however, suggests the SFT-only condition may match or exceed this result, so we treat the finance improvement as evidence toward generalization rather than a settled advantage of reflection specifically. Benchmarked against WildGuard, PromptGuard, and a prompted (non-fine-tuned) GPT-4o-mini reasoning classifier on the same sets, WildGuard leads on aggregate WildGuardTest F$_1$ (0.887), while Reflect-Guard achieves higher adversarial-subset recall than every evaluated classifier, including WildGuard (0.921 vs.\ 0.827) and the prompted teacher (0.636). Overall, supervised fine-tuning drives most of the aggregate gain over an un-fine-tuned classifier, while the generated safety rationale yields a narrower, latency-costly improvement specifically in adversarial-subset recall, a precision--recall tradeoff relevant to safety-critical deployments that prioritize recall over inference speed.}
 
 \keyword{LLM safety; adversarial prompts; jailbreak attacks; generated safety rationales; knowledge distillation; QLoRA; safety classification; precision--recall tradeoff; domain generalization; competitive baseline evaluation}
 
@@ -74,6 +81,7 @@ $^{4}$ \quad Independent Research, Dallas, TX 75234, USA;  woshilucy712@gmail.co
 %==============================================================================
 
 The deployment of large language models (LLMs) in production systems has created an urgent need for robust safety classifiers that can intercept harmful requests before they reach the target model~\citep{inan2023llamaguard, han2024wildguard}, one dimension of the broader trustworthy-AI challenge spanning safety, robustness, and reliability that recent large-scale surveys document across the LLM \hl{ecosystem}%MDPI: Wrong reference number: [32], prev number is [2]. References should be cited in numerical order. We changed ref. citation order in the tex, please check and confirm.
+%AU (reply to line 74): Confirmed. The reference list was renumbered in order of first citation; we re-checked that every citation key is cited in numerical order and that no reference is uncited.
 ~\citep{sun2024trustllm}. Current safety classifiers, including Meta's Llama Guard \mbox{family~\citep{inan2023llamaguard, metallamaguard3},} perform well on straightforward harmful prompts but exhibit significant vulnerabilities when confronted with adversarial jailbreak attacks~\citep{chao2023jailbreaking, zou2023universal, liu2024autodan}.
 
 Adversarial jailbreaks exploit a fundamental weakness in pattern-based classification: by wrapping harmful requests in benign-sounding contexts---fictional narratives, role-play scenarios, hypothetical research questions, or educational framings---attackers can bypass safety filters that rely primarily on surface-level semantic matching~\citep{wei2024jailbroken}. For instance, Llama-Guard-3-8B achieves only 51.3\% recall on the adversarial subset of WildGuardTest, meaning it misses nearly half of disguised harmful prompts.
@@ -81,19 +89,22 @@ Adversarial jailbreaks exploit a fundamental weakness in pattern-based classific
 We hypothesize that this vulnerability stems from the classifier's lack of explicit reasoning about adversarial intent. Human safety reviewers naturally decompose ambiguous inputs: they identify framing techniques, assess underlying intent behind surface-level language, and reason about whether a request would cause harm regardless of its narrative wrapper. Standard safety classifiers such as Llama Guard lack this analytical capability, making binary decisions without interpretable intermediate reasoning.
 
 This gap has begun to be addressed by a concurrent line of 2025 work that also trains safety classifiers to reason before rendering a verdict, including GuardReasoner~\citep{liu2025guardreasoner}, SaRO~\citep{mou2025saro}, and Think Twice, Generate Once~\citep{phan2025thinktwice} (compared in detail in \hl{Section} %MDPI: Section 2.0.0.3 is wrong. We revised the section citation based on the heading format revision in Section 2, please confirm.
+%AU (reply to line 81): Confirmed. The cross-reference now points to the renumbered Section 2 subsection via \ref.
  \ref{sec:related-reasoning}). Reflect-Guard occupies a different point in this design space: rather than large-scale reasoning-trace training or training-free inference-time reflection, we ask whether a much smaller intervention---knowledge distillation of a teacher model's structured reflections into a parameter-efficient LoRA adapter, trained on 1000 examples with ordinary supervised fine-tuning---captures a meaningful fraction of the same benefit, and, critically, whether that benefit is separable from what ordinary label-only fine-tuning already provides. This second question is one a larger-scale reasoning-training study is not naturally positioned to isolate, since without a matched label-only ablation at the same data and compute budget, gains attributed to ``reasoning'' can be confounded with gains from fine-tuning the decision boundary itself, precisely the confound this paper's five-condition ablation (Section~\ref{sec:ablation}) is designed to separate out.
 
-We propose \textbf{Reflect-Guard}, a method that endows safety classifiers with a generated safety rationale---a self-reflection step---through knowledge distillation and parameter-efficient fine-tuning. We use the term \emph{\hl{generated safety rationale} %MDPI: Please confirm if the italics of paragraph is unnecessary and can be removed, please check and confirm all italics in whole tex.
-} rather than ``chain-of-thought'' deliberately: the reflection text is a learned explanatory pattern distilled from a teacher model, and we make no claim that it reflects genuine internal reasoning (see Section~\ref{sec:discussion}). Our approach proceeds in three stages: (1) we use GPT-4o-mini to generate structured reflection annotations for a curated set of 1000 training examples, analyzing adversarial techniques and harm indicators; (2) we fine-tune Llama-Guard-3-8B using QLoRA~\citep{dettmers2024qlora} to generate these reflections as an intermediate step before safety classification; and (3)~at inference time, the model produces an explicit logical analysis in \hl{\texttt{<reflection>} %MDPI: Please confirm if the special fonts are necessary in whole tex.
+We propose \textbf{Reflect-Guard}, a method that endows safety classifiers with a generated safety rationale---a self-reflection step---through knowledge distillation and parameter-efficient fine-tuning. We use the term \hl{generated safety rationale} %MDPI: Please confirm if the italics of paragraph is unnecessary and can be removed, please check and confirm all italics in whole tex.
+%AU (reply to line 84): Italics removed from 'generated safety rationale'. Remaining italics in body text are limited to contrastive emphasis (e.g., with/without); italics were removed from captions.
+ rather than ``chain-of-thought'' deliberately: the reflection text is a learned explanatory pattern distilled from a teacher model, and we make no claim that it reflects genuine internal reasoning (see Section~\ref{sec:discussion}). Our approach \authchg{(Figure~\ref{fig:pipeline})} proceeds in three stages: (1) we use GPT-4o-mini to generate structured reflection annotations for a curated set of 1000 training examples, analyzing adversarial techniques and harm indicators; (2) we fine-tune Llama-Guard-3-8B using QLoRA~\citep{dettmers2024qlora} to generate these reflections as an intermediate step before safety classification; and (3)~at inference time, the model produces an explicit logical analysis in \hl{\texttt{<reflection>} %MDPI: Please confirm if the special fonts are necessary in whole tex.
+%AU (reply to line 85): Confirmed necessary: <reflection> is a literal output tag of the model, so it is kept in monospaced font. Other special fonts are used only for code identifiers, file names and model IDs.
 } tags before outputting its safety verdict.
 
 Because supervised fine-tuning (SFT) alone---without any reflection---could plausibly account for some or all of the improvement over an un-fine-tuned baseline, isolating reflection's specific contribution requires a controlled ablation rather than a single baseline-vs.-Reflect-Guard comparison. Our contributions are as follows:
 \begin{itemize}[leftmargin=*, nosep]
   \item We introduce Reflect-Guard, a reflection-augmented safety classification method that trains LLM-based safety classifiers to generate an explicit safety rationale about adversarial intent before classification; we do not claim this rationale constitutes verified internal reasoning (Section~\ref{sec:method}).
   \item We demonstrate that knowledge distillation from a teacher model (GPT-4o-mini) into structured reflection annotations produces measurable behavioral differences in the student classifier with only 1000 training examples.
-  \item Through a five-condition ablation (Section~\ref{sec:ablation}), we show that SFT on verdict labels alone accounts for the majority of the aggregate performance gain over an un-fine-tuned baseline (WildGuardTest F1: 0.770 $\to$ 0.860; JailbreakBench guard bypass rate: 10.3\% $\to$ 0.0\%), while reflection training on top of SFT provides a distinct, targeted improvement on adversarially framed inputs---+7.6 pp recall on the adversarial subset of WildGuardTest---at a modest cost to overall precision and F1 relative to SFT-only fine-tuning. We report this as a precision--recall tradeoff rather than an \mbox{unconditional improvement.}
+  \item Through a five-condition ablation (Section~\ref{sec:ablation}), we show that SFT on verdict labels alone accounts for the majority of the aggregate performance gain over an un-fine-tuned baseline (WildGuardTest F$_1$: 0.770 $\to$ 0.860; JailbreakBench guard bypass rate: 10.3\% $\to$ 0.0\%), while reflection training on top of SFT provides a distinct, targeted improvement on adversarially framed inputs---+7.6 pp recall on the adversarial subset of WildGuardTest---at a modest cost to overall precision and F$_1$ relative to SFT-only fine-tuning. We report this as a precision--recall tradeoff rather than an \mbox{unconditional improvement.}
   \item We retrain the SFT-only and full Reflect-Guard conditions under three random seeds (Section~\ref{sec:multiseed}): the same direction holds across all three seeds for both halves of the tradeoff (paired $t$-tests, $p=0.018$ and $p=0.027$ respectively), though we interpret these values cautiously given the small number of seeds. We also directly measure the inference-time cost of reflection---17.9$\times$ the baseline's median latency---rather than characterizing it qualitatively (Section~\ref{sec:efficiency}).
-  \item We benchmark Reflect-Guard against three external baselines on the same three benchmarks---WildGuard, PromptGuard, and a prompted zero-shot reasoning classifier using the same teacher model (GPT-4o-mini)---directly addressing the competitive-baseline gap raised in review (Section~\ref{sec:competitive}). While WildGuard achieves higher aggregate WildGuardTest F1 (0.887 vs.\ 0.842), Reflect-Guard achieves higher adversarial-subset recall than every evaluated external classifier (0.921, vs.\ 0.827 for WildGuard and 0.636 for the prompted teacher) and higher finance-benchmark F1 than WildGuard specifically (0.929 vs.\ 0.921), though Section~\ref{sec:multiseed} reports preliminary multi-seed evidence that our own SFT-only condition may match or exceed Reflect-Guard on finance as well.
+  \item We benchmark Reflect-Guard against three external baselines on the same three benchmarks---WildGuard, PromptGuard, and a prompted zero-shot reasoning classifier using the same teacher model (GPT-4o-mini)---directly addressing the competitive-baseline gap raised in review (Section~\ref{sec:competitive}). While WildGuard achieves higher aggregate WildGuardTest F$_1$ (0.887 vs.\ 0.842), Reflect-Guard achieves higher adversarial-subset recall than every evaluated external classifier (0.921, vs.\ 0.827 for WildGuard and 0.636 for the prompted teacher) and higher finance-benchmark F$_1$ than WildGuard specifically (0.929 vs.\ 0.921), though Section~\ref{sec:multiseed} reports preliminary multi-seed evidence that our own SFT-only condition may match or exceed Reflect-Guard on finance as well.
 \end{itemize}
 
 %==============================================================================
@@ -101,6 +112,7 @@ Because supervised fine-tuning (SFT) alone---without any reflection---could plau
 %==============================================================================
 
 \subsection{\highlighting{LLM Safety Classifiers} %MDPI: We put it to heading 2 format and added heading number. Please confirm. The following highlights are the same.
+%AU (reply to line 101): Confirmed (heading 2, numbered). Same for the following highlighted subsections.
 }
 The growing deployment of LLMs has spurred development of dedicated safety classifiers. Llama Guard~\citep{inan2023llamaguard} frames content moderation as instruction-following with a customizable taxonomy. Subsequent versions (Llama Guard 2~\citep{metallamaguard2}, Llama Guard 3~\citep{metallamaguard3}) expanded it to multilingual support and refined category definitions. WildGuard~\citep{han2024wildguard} addresses adversarial robustness by training on the WildGuardMix dataset containing adversarial examples. Other approaches include PromptGuard~\citep{meta2024promptguard} for injection detection, ShieldGemma~\citep{zeng2024shieldgemma} from Google, and OpenAI's moderation classifier, built on an active-learning pipeline over a broad undesired-content taxonomy~\citep{markov2023holistic}. AgentAuditor extends safety evaluation to LLM agents, achieving human-level judgment on agentic safety \mbox{scenarios~\citep{luo2025agentauditor}.} Recent advances in AI research agents indicate that LLM-based systems are becoming increasingly autonomous and capable of performing complex multi-step tasks across scientific workflows \citep{kong2026aiautoresearch}. We evaluate four of these classifiers---WildGuard, PromptGuard, OpenAI's moderation classifier, and a prompted GPT-4o-mini reasoning classifier---head-to-head against Reflect-Guard on the same three benchmarks (Section~\ref{sec:competitive}). PromptGuard's narrower design scope (attack-technique detection, not general content harm) and OpenAI's moderation classifier's fixed, platform-content-moderation taxonomy (sexual, hateful, violent, and self-harm content, rather than harmful \emph{instructions} regardless of surface content) both limit their value as general-classifier comparisons for this task (Section~\ref{sec:limitations}). ShieldGemma remains untested: its checkpoints are gated HuggingFace repositories with access still pending.
 
@@ -125,10 +137,11 @@ Knowledge distillation~\citep{hinton2015distilling} has been applied to transfer
 \subsection{Problem Formulation}
 
 Given an input prompt $x$, a safety classifier $f$ must produce a binary verdict \mbox{$y \in \{\texttt{safe}, \texttt{unsafe}\}$.} Standard classifiers model this as $y = f(x)$. Our approach introduces an intermediate reflection step $r$, decomposing the classification \hl{into:} %MDPI: Please carefully check variables formatting (italic, subscript, uppercase, etc.) throughout the manuscript to ensure the formatting is consistent and revise if needed.
+%AU (reply to line 125): Checked. Variables (x, y, r, f, g, h, p, n) are italic math; metric names F1/F2 are now consistently typeset with subscripts (F$_1$, F$_2$) in text and tables.
 \begin{equation}
-  r = g(x), \quad y = h(x, r)
+  r = g(x), \quad y = h(x, r)\label{eq:reflect}
 \end{equation}
-where $g$ generates a logical analysis of the prompt's intent and adversarial characteristics, and $h$ produces the final verdict conditioned on both the input and the reflection. In practice, both $g$ and $h$ are implemented by a single autoregressive model that first generates $r$ in \texttt{<reflection>} tags, then generates $y$.
+where\authchg{, in Equation~(\ref{eq:reflect}),} $g$ generates a logical analysis of the prompt's intent and adversarial characteristics, and $h$ produces the final verdict conditioned on both the input and the reflection. In practice, both $g$ and $h$ are implemented by a single autoregressive model that first generates $r$ in \texttt{<reflection>} tags, then generates $y$.
 
 \vspace{-3pt}
 \begin{figure}[H]
@@ -186,7 +199,7 @@ where $g$ generates a logical analysis of the prompt's intent and adversarial ch
 \node[box, fill=purple!8, draw=purple!55, minimum width=3.5cm,
       text width=3.3cm, minimum height=1.6cm] (refl)
   at (9.65, -1.60)
-  {\texttt{<reflection>}\\[-1pt]Adversarial analysis\\[-2pt]$\cdots$};
+  {\texttt{<reflection>}\\[-1pt]Adversarial analysis};
 \draw[arr] (rg.east) -- (refl.west);
 
 \node[box, fill=red!8, draw=red!45, minimum width=2.0cm] (verdict)
@@ -203,13 +216,14 @@ where $g$ generates a logical analysis of the prompt's intent and adversarial ch
 \node[lbl] at (10.50, 0.22) {load};
 
 \end{tikzpicture}}%
-\caption{\textbf{\hl{Reflect-Guard overview.} %MDPI: 1. Please confirm if the bold formatting is necessary in caption; if not, please remove it. 2. Figure cannot be put after heading directly, we moved the figure there, please confirm. 3. Please cite this figure in the tex and ensure that the first citation of each figure appears in numerical order. 4. There is … in the figure body, please confirm if the figure content is complete and affects scientific understanding, if it is not complete and affects scientific understanding, please revise the figure. 5. Please note that the size of figures and tables, the position of figures and tables will be adjusted appropriately may occur during the production stage to reduce the page blank.
-}
-  \textit{\hl{Training (\textbf{top}):} %MDPI: Please confirm if the italics formatting is necessary in caption; if not, please remove it. The following highlights are the same.
-} GPT-4o-mini generates structured reflection annotations
+\caption{\hl{Reflect-Guard overview.} %MDPI: 1. Please confirm if the bold formatting is necessary in caption; if not, please remove it. 2. Figure cannot be put after heading directly, we moved the figure there, please confirm. 3. Please cite this figure in the tex and ensure that the first citation of each figure appears in numerical order. 4. There is … in the figure body, please confirm if the figure content is complete and affects scientific understanding, if it is not complete and affects scientific understanding, please revise the figure. 5. Please note that the size of figures and tables, the position of figures and tables will be adjusted appropriately may occur during the production stage to reduce the page blank.
+%AU (reply to line 204): 1. Bold removed from the caption. 2. Figure position confirmed. 3. Figure is now cited in the text (Introduction, Figure 1) before its appearance. 4. The ellipsis has been removed from the figure body per the authors' instruction. 5. Noted.
+  \hl{Training (top):} %MDPI: Please confirm if the italics formatting is necessary in caption; if not, please remove it. The following highlights are the same.
+%AU (reply to line 206): Italics removed from the caption, including 'top'/'bottom'.
+ GPT-4o-mini generates structured reflection annotations
   for 1000 labeled prompts; Llama-Guard-3-8B is then fine-tuned via QLoRA to
   reproduce these reflections.
-  \textit{\hl{Inference (\textbf{bottom}):}} The fine-tuned model generates an explicit adversarial
+  \hl{Inference (bottom):} The fine-tuned model generates an explicit adversarial
   analysis inside \texttt{<reflection>} tags before issuing a safety verdict; no
   external API is required at \mbox{inference time.}\label{fig:pipeline}}
 \end{figure}
@@ -219,28 +233,30 @@ where $g$ generates a logical analysis of the prompt's intent and adversarial ch
 
 Equivalently, under a single generative model with parameters $\theta$, we factorize the conditional distribution as
 \begin{equation}
-  p_{\theta}(r, y \mid x) = p_{\theta}(r \mid x) \, p_{\theta}(y \mid x, r),
+  p_{\theta}(r, y \mid x) = p_{\theta}(r \mid x) \, p_{\theta}(y \mid x, r),\label{eq:factor}
 \end{equation}
 and predict the final label via
 \begin{equation}
   \hat{y} = \arg\max_{y \in \{\texttt{safe},\texttt{unsafe}\}} p_{\theta}(y \mid x, \hat{r}),
-  \qquad \hat{r} \sim p_{\theta}(r \mid x).
+  \qquad \hat{r} \sim p_{\theta}(r \mid x).\label{eq:argmax}
 \end{equation}
 \hl{This} %MDPI: Please confirm if the noindent of paragraph is necessary in whole tex.
- formulation makes explicit that the reflection serves as a latent, model-generated rationale that conditions the downstream safety decision.
+%AU (reply to line 227): \noindent is not used in the body; it appears only in table footnotes and the Abbreviations block. This paragraph continues the sentence after the equation, so no indent is intended. All equations are now cited in the text in numerical order (Equations (1)-(12)).
+ formulation \authchg{(Equations~(\ref{eq:factor}) and~(\ref{eq:argmax}))} makes explicit that the reflection serves as a latent, model-generated rationale that conditions the downstream safety decision.
 
 \subsection{Reflection-Augmented Training Data}
 \label{sec:synthesis}
 
 We constructed a training dataset of 1000 examples from two sources: 500 examples from WildGuardMix~\citep{han2024wildguard} (the training split) and 500 from AdvBench~\citep{zou2023universal}. The combined dataset contained 773 harmful and 227 benign examples. Denoting the synthesized dataset by
 \begin{equation}
-  \mathcal{D} = \{(x_i, y_i, r_i, c_i)\}_{i=1}^{N}, \qquad N=1000,
+  \mathcal{D} = \{(x_i, y_i, r_i, c_i)\}_{i=1}^{N}, \qquad N=1000,\label{eq:dataset}
 \end{equation}
-where $x_i$ is the input prompt, $y_i$ is the binary safety label, $r_i$ is the teacher-generated reflection, and $c_i$ denotes the violated safety categories (empty for safe prompts), we used GPT-4o-mini as a teacher model to generate a structured reflection annotation for \mbox{each example.}
+where\authchg{, in Equation~(\ref{eq:dataset}),} $x_i$ is the input prompt, $y_i$ is the binary safety label, $r_i$ is the teacher-generated reflection, and $c_i$ denotes the violated safety categories (empty for safe prompts), we used GPT-4o-mini as a teacher model to generate a structured reflection annotation for \mbox{each example.}
 
 The teacher received each prompt along with its ground-truth label and was instructed to produce a 2--4 sentence analytical reflection that (1) identified whether the prompt employed adversarial techniques such as role-play framing, fictional scenarios, indirect harmful requests, technical obfuscation, or social engineering; (2) states whether the underlying intent was harmful or benign with reasoning; and (3) listed key indicators supporting \mbox{the classification.}
 
 Each training example was formatted as a conversation following the Llama Guard 3~\hl{template:} %MDPI: Please confirm if the following content format (box, color of background, bold, special fonts) necessary and correct.
+%AU (reply to line 241): Confirmed necessary and correct: the grey box shows the verbatim Llama Guard 3 training template; monospaced font marks literal tokens/tags.
 \begin{tcolorbox}[graybox]
 \textbf{User:} [Safety instruction with 13 categories S1--S13] \\
 \texttt{<BEGIN CONVERSATION>} \\
@@ -256,13 +272,15 @@ Provide your safety assessment\ldots First provide a logical self-reflection in 
 
 We fine-tuned Llama-Guard-3-8B~\citep{metallamaguard3} using QLoRA~\citep{dettmers2024qlora} with 4-bit NormalFloat (NF4) quantization and double quantization. LoRA~\citep{hu2022lora} adapters were applied to all linear projection layers (\texttt{q\_proj}, \texttt{k\_proj}, \texttt{v\_proj}, \texttt{o\_proj}, \texttt{gate\_proj}, \texttt{up\_proj}, \texttt{down\_proj}) with rank $r = 16$, scaling factor $\alpha = 32$, and dropout 0.05. This resulted in approximately 42M trainable parameters (0.5\% of the full 8B model).
 
-Training used the paged AdamW optimizer with 8-bit states, learning rate $2 \times 10^{-4}$ with cosine scheduling and 5 warmup steps. We trained for 3 epochs with a per-device batch size of 1 and gradient accumulation of 16 steps (effective batch size of 16), using BF16 mixed precision and gradient checkpointing. Let $s_i = [r_i; y_i; c_i]$ denote the target output sequence for example $i$, consisting of the reflection, verdict, and optional category codes. The fine-tuning objective was the standard autoregressive negative log-likelihood:
+Training used the paged AdamW optimizer with 8-bit states, learning rate $2 \times 10^{-4}$ with cosine scheduling and 5 warmup steps. We trained for 3 epochs with a per-device batch size of 1 and gradient accumulation of 16 steps (effective batch size of 16), using BF16 mixed precision and gradient checkpointing. Let $s_i = [r_i; y_i; c_i]$ denote the target output sequence for example $i$, consisting of the reflection, verdict, and optional category codes. The fine-tuning objective was the standard autoregressive negative log-likelihood \authchg{(Equation~(\ref{eq:sft}))}:
 \begin{equation}
   \mathcal{L}_{\text{SFT}}(\theta) = - \frac{1}{N} \sum_{i=1}^{N} \sum_{t=1}^{|s_i|}
-  \log p_{\theta}\bigl(s_{i,t} \mid x_i, s_{i,<t}\bigr).
+  \log p_{\theta}\bigl(s_{i,t} \mid x_i, s_{i,<t}\bigr).\label{eq:sft}
 \end{equation}
-Training completed in approximately 1 h on a single NVIDIA A5000 GPU. The full software environment was: Python 3.10, PyTorch 2.2.0 (CUDA 11.8 build), Transformers 4.44.2, \mbox{PEFT $\geq$\hl{ 0.12.0,} %MDPI: Please confirm if the number is correct. Same as below.
+Training completed in approximately 1 h on a single NVIDIA A5000 GPU \authchg{(NVIDIA, Santa Clara, CA, USA)}. The full software environment was: Python 3.10, PyTorch 2.2.0 (CUDA 11.8 build), Transformers 4.44.2, \mbox{PEFT $\geq$\hl{ 0.12.0,} %MDPI: Please confirm if the number is correct. Same as below.
+%AU (reply to line 262): Confirmed against the repository's requirements.txt: PEFT >= 0.12.0 and bitsandbytes >= 0.43.1 are the exact pinned versions used.
 } bitsandbytes $\geq$ \hl{0.43.1}, TRL 0.9.6, and Accelerate 0.33.0 (\texttt{requirements.txt}, data availability statement); GPUs were requested with compute capability up to sm\_90 (\hl{Hopper}%MDPI: The companies/manufacturers of chemicals & reagents, devices, instruments, commercial cell lines/samples/materials should be indicated together with their city (states abbreviation is required for USA and Canada) and country in their first appearance, please check and add. The following highlights are the same.
+%AU (reply to line 263): Hopper and Blackwell are NVIDIA GPU architectures; the manufacturer with city/country (NVIDIA, Santa Clara, CA, USA) is now given at the first appearance of NVIDIA (A5000 GPU, same sentence group). No other commercial instruments were used.
 ), since the pinned CUDA~11.8 PyTorch build did not support newer sm\_120 (\hl{Blackwell}) hardware present on the shared cluster used for this work.
 
 \subsection{Inference Pipeline}
@@ -270,7 +288,25 @@ Training completed in approximately 1 h on a single NVIDIA A5000 GPU. The full s
 \textls[-15]{At inference time, the fine-tuned model receives a prompt formatted with the same safety instruction template used during training. The model autoregressively generates: (1)~a reflection analyzing the prompt's characteristics, enclosed in \mbox{\texttt{<reflection>\ldots</reflection>}}} tags, followed by (2) a safety verdict (\texttt{safe} or \texttt{unsafe}), and optionally (3) violated category codes. We use greedy decoding with a maximum of 150 new tokens. The reflection is extracted and stored alongside the verdict for interpretability.
 
 Critically, no external API calls are required at inference time; the reflection capability is fully internalized in the LoRA adapter. This does, however, add substantial generation cost relative to the base model: a standard Llama Guard verdict is typically only 1--3~output tokens, whereas Reflect-Guard generates the verdict plus a mean of $\sim$92 additional reflection tokens per prompt, measured directly (Section~\ref{sec:efficiency}, \hl{Table} %MDPI: Wrong citation number: Table 7, last citation is Table 1. Current citation order is: 7, 1, 8, 2, 3, 4, 6, 5, 9, 10, 11. Tables should be cited in numerical order, and the first Table citation should be Table 1, please check and correct to ensure all tables to be cited and list in numerical order in whole tex.
+%AU (reply to line 270): Corrected. Table order was fixed by moving the latency table next to its first citation (now Table 1); tables are now cited and listed as 1-11 in order.
  \ref{tab:latency}) at a median single-request latency 17.9$\times$ that of the un-fine-tuned baseline and 14.3$\times$ that of Condition B. The added latency is substantial, not negligible, and is the direct cost of the adversarial-recall gain discussed in Section~\ref{sec:ablation}.
+
+\begin{table}[H]
+  \caption{\hl{Inference} %MDPI: 1. Please add an explanation for the use of bold in the table footer. If the bold is unnecessary, please remove it in whole table body. 2. Table 6 is not after first citation, please check and confirm.
+%AU (reply to line 670): 1. Bold removed from the table body (it carried no meaning). 2. Table moved to directly after its first citation in Section 3.4 (now Table 1).
+ latency, throughput, and GPU memory, measured on 200 fixed WildGuardTest prompts on a single NVIDIA A40 GPU, greedy decoding, max\_new\_tokens = 150. Single-request latency is measured one prompt at a time (batch size 1); batched throughput uses a batch size of 8. All three conditions were measured back-to-back in the same job on identical hardware.\label{tab:latency}}
+ % \centering
+  \small
+  \begin{tabularx}{\textwidth}{lCCCcc}
+    \toprule
+    \textbf{Condition} &  \textbf{P50 (s)} &  \textbf{P95 (s)} &  \textbf{P99 (s)} &  \textbf{Mean Tokens} &  \textbf{Throughput (Prompts/s)} \\
+    \midrule
+    0. Clean Baseline & 0.282 & 0.377 & 0.422 & 3.9 & 4.30 \\
+    B. SFT Labels Only & 0.352 & 0.513 & 0.553 & 3.4 & 3.44 \\
+    D. Reflect-Guard & 5.045 & 6.322 & 6.650 & 92.5 & 0.43 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
 %==============================================================================
 \section{Experimental Setup}
@@ -279,10 +315,11 @@ Critically, no external API calls are required at inference time; the reflection
 \subsection{Benchmarks}
 \label{sec:benchmarks}
 
-\paragraph{\hl{WildGuardTest.} %MDPI: Please confirm if it is should be heading 3, if is, please revised the format and added heading number, if not, please confirm if it needs to be put list format. The following highlights are the same.
+\subsubsection{WildGuardTest %MDPI: Please confirm if it is should be heading 3, if is, please revised the format and added heading number, if not, please confirm if it needs to be put list format. The following highlights are the same.
+%AU (reply to line 280): Revised to heading 3 (numbered). Same for all following highlighted run-in headings.
 } The test split of WildGuardMix~\citep{han2024wildguard} contains 1699 prompts (754 harmful, 945 benign) with annotations for adversarial framing. The adversarial subset ($n = 796$) contains prompts that disguise intent through various obfuscation techniques and is itself a mix of ground-truth labels: 341 harmful (adversarially framed jailbreak attempts) and 455 benign (prompts that adopt an adversarial-looking surface structure, e.g., role-play or security-related framing, without harmful intent). Both subpopulations matter for evaluation: recall on the 341 harmful examples measures whether adversarial framing successfully evades the classifier, while precision on the 455 benign examples measures whether that same surface structure triggers over-blocking (Section~\ref{sec:discussion}).
 
-\paragraph{\hl{JailbreakBench.}} JailbreakBench~\citep{chao2024jailbreakbench} provides 282 jailbreak prompts generated by three attack methods against Vicuna-13B-v1.5: GCG~\citep{zou2023universal} (100 prompts, gradient-based token optimization), JBC (100 prompts, template-based jailbreaks), and PAIR~\citep{chao2023jailbreaking} (82 prompts, LLM-assisted semantic attacks). All prompts are ground-truth harmful, so the primary metric is detection rate (equivalently, one minus the guard bypass rate; Section~\ref{sec:metrics}).
+\subsubsection{JailbreakBench} JailbreakBench~\citep{chao2024jailbreakbench} provides 282 jailbreak prompts generated by three attack methods against Vicuna-13B-v1.5: GCG~\citep{zou2023universal} (100 prompts, gradient-based token optimization), JBC (100 prompts, template-based jailbreaks), and PAIR~\citep{chao2023jailbreaking} (82 prompts, LLM-assisted semantic attacks). All prompts are ground-truth harmful, so the primary metric is detection rate (equivalently, one minus the guard bypass rate; Section~\ref{sec:metrics}).
 
 \subsection{Baseline}
 
@@ -291,36 +328,37 @@ Our baseline was Llama-Guard-3-8B~\citep{metallamaguard3} with identical 4-bit N
 \subsection{Metrics}
 \label{sec:metrics}
 
-We report accuracy, precision, recall, and F1 score for WildGuardTest, computed with ``harmful'' as the positive class. Using true positives (TP), false positives (FP), true negatives (TN), and false negatives (FN), the main metrics are
+We report accuracy, precision, recall, and F$_1$ score for WildGuardTest, computed with ``harmful'' as the positive class. Using true positives (TP), false positives (FP), true negatives (TN), and false negatives (FN), the main metrics \authchg{(Equations~(\ref{eq:acc})--(\ref{eq:f1}))} are
 \begin{align}
-  \text{Accuracy} &= \frac{\mathrm{TP}+\mathrm{TN}}{\mathrm{TP}+\mathrm{TN}+\mathrm{FP}+\mathrm{FN}}, \\
-  \text{Precision} &= \frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}}, \\
-  \text{Recall} &= \frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}}, \\
-  F_{1} &= \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision}+\text{Recall}}.
+  \text{Accuracy} &= \frac{\mathrm{TP}+\mathrm{TN}}{\mathrm{TP}+\mathrm{TN}+\mathrm{FP}+\mathrm{FN}},\label{eq:acc} \\
+  \text{Precision} &= \frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}},\label{eq:prec} \\
+  \text{Recall} &= \frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}},\label{eq:rec} \\
+  F_{1} &= \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision}+\text{Recall}}.\label{eq:f1}
 \end{align}
 Because safety deployment often prioritizes recall, we also report
 \begin{equation}
   F_{\beta} = (1+\beta^2)\frac{\text{Precision} \cdot \text{Recall}}{\beta^2 \cdot \text{Precision} + \text{Recall}},
-  \qquad F_2 = 5\frac{PR}{4P + R},
+  \qquad F_2 = 5\frac{PR}{4P + R},\label{eq:fbeta}
 \end{equation}
-where $P$ and $R$ abbreviate precision and recall. For JailbreakBench, we report detection rate (DR) per attack method and the overall \emph{guard bypass rate} (GBR),
+where\authchg{, in Equation~(\ref{eq:fbeta}),} $P$ and $R$ abbreviate precision and recall. For JailbreakBench, we report detection rate (DR) per attack method and the overall \emph{guard bypass rate} (GBR)\authchg{, defined in Equation~(\ref{eq:drgbr}),}
 \begin{equation}
   \mathrm{DR} = \frac{\#\text{detected harmful prompts}}{\#\text{all harmful prompts}},
   \qquad
-  \mathrm{GBR} = 1 - \mathrm{DR}.
+  \mathrm{GBR} = 1 - \mathrm{DR}.\label{eq:drgbr}
 \end{equation}
-We use ``guard bypass rate'' rather than the more common ``attack success rate'' deliberately: GBR measures only whether a prompt evades \emph{this safety classifier}, not whether a downstream target LLM was actually induced to produce a prohibited response, which is what ``attack success rate'' conventionally denotes. When comparing guard bypass rates, the relative reduction is computed as
+We use ``guard bypass rate'' rather than the more common ``attack success rate'' deliberately: GBR measures only whether a prompt evades \emph{this safety classifier}, not whether a downstream target LLM was actually induced to produce a prohibited response, which is what ``attack success rate'' conventionally denotes. When comparing guard bypass rates, the relative reduction is computed as \authchg{(Equation~(\ref{eq:relred}))}
 \begin{equation}
-  \mathrm{Rel.Reduction} = \frac{\mathrm{GBR}_{\text{base}} - \mathrm{GBR}_{\text{ours}}}{\mathrm{GBR}_{\text{base}}}.
+  \mathrm{Rel.Reduction} = \frac{\mathrm{GBR}_{\text{base}} - \mathrm{GBR}_{\text{ours}}}{\mathrm{GBR}_{\text{base}}}.\label{eq:relred}
 \end{equation}
 We provide breakdown analyses for adversarial versus non-adversarial subsets on WildGuardTest.
 
-\paragraph{\hl{Uncertainty estimates.} %MDPI:  Please confirm if it is should be heading 3, if is, please revised the format and added heading number, if not, please confirm if it needs to be put list format. The following highlights are the same.
+\subsubsection{Uncertainty estimates %MDPI:  Please confirm if it is should be heading 3, if is, please revised the format and added heading number, if not, please confirm if it needs to be put list format. The following highlights are the same.
+%AU (reply to line 316): Revised to heading 3 (numbered).
 } The headline point estimates in Sections~\ref{sec:results}--\ref{sec:discussion} come from a single training run per condition (seed 42). To give some sense of the uncertainty attributable to the finite size of the test sets, we report 95\% confidence intervals obtained by bootstrap resampling (2000~resamples with replacement) of the fixed WildGuardTest and JailbreakBench prediction sets for each condition; these intervals quantify test-set sampling uncertainty only, not training-time randomness. To separately quantify training-time variance, we additionally retrained Conditions B and D under two further random seeds (123 and 2024; three seeds in total, including the original) with everything else held fixed and evaluated each on all three benchmarks. Section~\ref{sec:multiseed} reports the resulting mean $\pm$ std across seeds, a pooled bootstrap 95\% CI that combines test-set and seed variance, and a paired significance test between Conditions B and D. Condition 0 is training-free and uses greedy decoding, so it has no training-time variance to report.
 
-\paragraph{\hl{Exact dataset versions and sampling procedure.}} Training prompts were drawn from two HuggingFace datasets, \texttt{allenai/wildguardmix} (config \texttt{wildguardtrain}) and \texttt{walledai/AdvBench}, loaded at the versions resolved by the \texttt{datasets} library at training time (exact commit hashes were not pinned, itself a reproducibility gap we note rather than obscure). Sampling was deterministic given \texttt{RANDOM\_SEED = 42} (\texttt{reflect\_guard/config.py}): each source was shuffled under the fixed seed and truncated to 500 examples, then the combined 1000-example set was shuffled again. Evaluation used the WildGuardMix \texttt{wildguardtest} split ($n=1699$) and JailbreakBench's published artifacts (Section~\ref{sec:benchmarks}), fetched independently of training. The exact code path (\texttt{reflect\_guard/synthesize.py:load\_sources}) is released in full (data \mbox{availability statement}).
+\subsubsection{Exact dataset versions and sampling procedure} Training prompts were drawn from two HuggingFace datasets, \texttt{allenai/wildguardmix} (config \texttt{wildguardtrain}) and \texttt{walledai/AdvBench}, loaded at the versions resolved by the \texttt{datasets} library at training time (exact commit hashes were not pinned, itself a reproducibility gap we note rather than obscure). Sampling was deterministic given \texttt{RANDOM\_SEED = 42} (\texttt{reflect\_guard/config.py}): each source was shuffled under the fixed seed and truncated to 500 examples, then the combined 1000-example set was shuffled again. Evaluation used the WildGuardMix \texttt{wildguardtest} split ($n=1699$) and JailbreakBench's published artifacts (Section~\ref{sec:benchmarks}), fetched independently of training. The exact code path (\texttt{reflect\_guard/synthesize.py:load\_sources}) is released in full (data \mbox{availability statement}).
 
-\paragraph{\hl{Data leakage check.}} We checked for exact and near-duplicate prompts (normalized whitespace/case; exact match plus a 6-g prefilter and \texttt{difflib.SequenceMatcher} ratio $\geq 0.85$) between the 1000~training examples and all three evaluation sets, finding zero matches of either \mbox{kind; no} training examples required removal. The finance benchmark's 269 synthetic examples were likewise checked against each other for internal duplication, with zero found.
+\subsubsection{Data leakage check} We checked for exact and near-duplicate prompts (normalized whitespace/case; exact match plus a 6-g prefilter and \texttt{difflib.SequenceMatcher} ratio $\geq 0.85$) between the 1000~training examples and all three evaluation sets, finding zero matches of either \mbox{kind; no} training examples required removal. The finance benchmark's 269 synthetic examples were likewise checked against each other for internal duplication, with zero found.
 
 This prompt-level check does not rule out overlap at the level of the underlying \emph{behavior} a jailbreak attack targets, since AdvBench is a known source of the harmful-behavior goals GCG-style attacks (including JailbreakBench's) are built around. We checked directly: of JailbreakBench's 104 unique behaviors, 10 (9.6\%) exactly matched a training prompt and a further five (4.8\%, ratio $\geq 0.85$) were near-duplicates, e.g., ``develop malware that disables antivirus software'' vs.\ our training set's ``develop a virus that disables antivirus software.'' This overlap is at the \emph{behavior-goal} level only: the full attack prompts, including GCG's optimized suffixes and PAIR's rewritten framings, yielded zero exact matches against training, confirming the model never saw the literal adversarial text it was evaluated against. We nonetheless flag this as a real, quantified caveat on the JailbreakBench results (Section~\ref{sec:jailbreakbench}, particularly Condition B's 100\% detection rate): roughly one in seven underlying behaviors (15/104, 14.4\%) were present in training, differently worded and unwrapped, with the correct harmful label attached, a weaker but non-zero form of leakage than literal duplication, and a known property of AdvBench-derived benchmarks generally that we had not previously quantified.
 
@@ -328,13 +366,14 @@ To check whether this behavior-level overlap materially inflates the headline de
 
 %==============================================================================
 \section{\highlighting{Results} %MDPI: This section heading is a duplicate of Section 6.3, please confirm whether it can be retained or should be revised.
+%AU (reply to line 328): Revised: the finance subsection heading 'Results' was renamed 'Finance Benchmark Results' to avoid the duplicate; Section heading 'Results' retained.
 }
 \label{sec:results}
 %==============================================================================
 
 \subsection{WildGuardTest}
 
-Table~\ref{tab:wildguard_main} presents the overall classification performance, including the SFT-only baseline (Condition B, Section~\ref{sec:ablation}) alongside the clean baseline (Condition 0) and the full Reflect-Guard model (Condition D), plus two external classifiers evaluated on the same test set (Section~\ref{sec:competitive}). Conditions A (prompted reflection, no fine-tuning) and C (blind reflections) are omitted from this table to keep it focused on the paper's central comparison; the full five-condition comparison, including A and C, is reported in Table~\ref{tab:ablation} (Section~\ref{sec:ablation}). \textbf{Among our three conditions, Condition B, not Reflect-Guard, achieves the best overall F1 (0.860) and accuracy (0.877)}, confirming that supervised fine-tuning (SFT) on the decision boundary, not reflection, is responsible for the majority of the aggregate improvement over the un-fine-tuned baseline (F1: 0.770 $\to$ 0.860, +9.0 pp). Adding reflection on top of SFT (Condition D) trades a further $-$1.8 pp of overall F1 and $-$4.7 pp of precision relative to Condition B for +1.0 pp of overall recall; Section~\ref{sec:ablation} shows this small aggregate recall gain is concentrated specifically on adversarially framed prompts, not distributed uniformly. Relative to the clean baseline, Reflect-Guard still improves F1 by 7.2 pp (0.770 $\to$ 0.842) and the F$_2$ score (which weights recall twice as heavily as precision, relevant for safety-critical deployment) improves from 0.702 to 0.855, but Condition B's F$_2$ (0.856) is statistically indistinguishable, underscoring that this aggregate gain is attributable to SFT rather than to reflection specifically. Against the wider field, WildGuard---a dedicated, purpose-trained safety classifier---outperforms all three of our conditions on aggregate accuracy, precision, and F1, though Condition D's overall recall remains the highest of any evaluated classifier; Section~\ref{sec:competitive} discusses this comparison, and the prompted GPT-4o-mini reasoning classifier, in full.
+Table~\ref{tab:wildguard_main} presents the overall classification performance, including the SFT-only baseline (Condition B, Section~\ref{sec:ablation}) alongside the clean baseline (Condition 0) and the full Reflect-Guard model (Condition D), plus two external classifiers evaluated on the same test set (Section~\ref{sec:competitive}). Conditions A (prompted reflection, no fine-tuning) and C (blind reflections) are omitted from this table to keep it focused on the paper's central comparison; the full five-condition comparison, including A and C, is reported in Table~\ref{tab:ablation} (Section~\ref{sec:ablation}). Among our three conditions, Condition B, not Reflect-Guard, achieves the best overall F$_1$ (0.860) and accuracy (0.877), confirming that supervised fine-tuning (SFT) on the decision boundary, not reflection, is responsible for the majority of the aggregate improvement over the un-fine-tuned baseline (F$_1$: 0.770 $\to$ 0.860, +9.0 pp). Adding reflection on top of SFT (Condition D) trades a further $-$1.8 pp of overall F$_1$ and $-$4.7 pp of precision relative to Condition B for +1.0 pp of overall recall; Section~\ref{sec:ablation} shows this small aggregate recall gain is concentrated specifically on adversarially framed prompts, not distributed uniformly. Relative to the clean baseline, Reflect-Guard still improves F$_1$ by 7.2 pp (0.770 $\to$ 0.842) and the F$_2$ score (which weights recall twice as heavily as precision, relevant for safety-critical deployment) improves from 0.702 to 0.855, but Condition B's F$_2$ (0.856) is statistically indistinguishable, underscoring that this aggregate gain is attributable to SFT rather than to reflection specifically. Against the wider field, WildGuard---a dedicated, purpose-trained safety classifier---outperforms all three of our conditions on aggregate accuracy, precision, and F$_1$, though Condition D's overall recall remains the highest of any evaluated classifier; Section~\ref{sec:competitive} discusses this comparison, and the prompted GPT-4o-mini reasoning classifier, in full.
 
 % \begin{table}[H]
 %   \caption{Overall performance on WildGuardTest ($n = 1{,}699$). Best results across \emph{all} evaluated classifiers, including the external baselines below the second rule, in \textbf{bold}. Bracketed values are 95\% bootstrap confidence intervals (2{,}000 resamples over the fixed test set; Section~\ref{sec:metrics}); WildGuard and Prompted-CoT are single evaluation runs with no retraining, so no CI is shown for them.\label{tab:wildguard_main}}
@@ -360,14 +399,17 @@ Table~\ref{tab:wildguard_main} presents the overall classification performance, 
 
 \begin{table}[H]
   \caption{\hl{Overall} %MDPI: Please add an explanation for the use of font colors (red, teal) in the table footer. If the font colors (red, teal) are unnecessary, please remove them in whole table. 
- performance on WildGuardTest ($n = 1699$). Best results across \emph{\hl{all} %MDPI: Please confirm if the italics is unnecessary and can be removed.
-} evaluated classifiers, including the external baselines below the second rule, in \textbf{\hl{bold}%MDPI: Please confirm if the bold of paragraph is unnecessary and can be removed.
-}. Bracketed values are 95\% bootstrap confidence intervals (2000 resamples over the fixed test set; Section~\ref{sec:metrics}); WildGuard and Prompted-CoT are single evaluation runs with no retraining, so no CI is shown for them.\label{tab:wildguard_main}}
+%AU (reply to line 360): Explanation added in the table footer: teal = positive difference, red = negative difference.
+ performance on WildGuardTest ($n = 1699$). Best results across \hl{all} %MDPI: Please confirm if the italics is unnecessary and can be removed.
+%AU (reply to line 361): Italics removed.
+ evaluated classifiers, including the external baselines below the second rule, in \hl{bold}%MDPI: Please confirm if the bold of paragraph is unnecessary and can be removed.
+%AU (reply to line 362): Bold removed from the caption word. Bold in the table body is explained by the caption ('best results ... in bold').
+. Bracketed values are 95\% bootstrap confidence intervals (2000 resamples over the fixed test set; Section~\ref{sec:metrics}); WildGuard and Prompted-CoT are single evaluation runs with no retraining, so no CI is shown for them.\label{tab:wildguard_main}}
  % \centering
   \small
   \begin{tabularx}{\textwidth}{lCCCC}
     \toprule
-    \textbf{Model} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+    \textbf{Model} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F}\boldmath{$_1$} \\
     \midrule
     0. Llama-Guard-3-8B (baseline)
       & 0.825
@@ -415,22 +457,52 @@ Table~\ref{tab:wildguard_main} presents the overall classification performance, 
 
     \bottomrule
   \end{tabularx}
+\noindent{\small{\authchg{Teal and red indicate a positive and a negative difference, respectively.}}}
+\end{table}
+
+\begin{table}[H]
+\caption{\hl{Ablation} %MDPI: 1. Please add an explanation for the use of bold in the table footer. If the bold is unnecessary, please remove it in whole table body.  2. We removed vertical lines in whole table, please confirm. 3. Please confirm if needs to add the explanations of ×, ✓, — in table footer. 4. Table 8 is not after first citation, please check and confirm.
+%AU (reply to line 785): 1. Bold removed from the table body. 2. Removal of vertical lines confirmed. 3. Explanations of x, check mark and --- added in the table footer. 4. Table moved directly after its first citation; it is now Table 3.
+ study results. F$_2$ weights recall twice as heavily as precision, reflecting safety deployment priorities. Adv-Rec = recall on the adversarial subset of WildGuardTest ($n=796$). JBB~DR = JailbreakBench detection rate.\label{tab:ablation}}
+\small
+
+\begin{adjustwidth}{-\extralength}{0cm}
+%\centering %% If there is a figure in wide page, please release command \centering
+\begin{tabularx}{\fulllength}{lCCCCCCCCcc}
+\toprule
+\textbf{Condition} & \textbf{R} & \textbf{S} & \textbf{G} & \textbf{Acc} & \textbf{Prec} & \textbf{Rec} & \textbf{F}\boldmath{$_1$} & \textbf{F}\boldmath{$_2$} & \textbf{Adv-Rec} & \textbf{JBB DR} \\
+\midrule
+0. Clean Baseline     & \texttimes & \texttimes & ---        & \hl{0}%MDPI: We added “0” before the decimal sign. Please confirm this revision in whole table.
+%AU (reply to line 795): Confirmed. A leading 0 before the decimal point is used throughout the table.
+.825 & 0.919 & 0.663          & 0.770 & 0.702          & 0.513          & 89.7\%  \\
+A. Prompted Refl.     & \checkmark & \texttimes & ---        & 0.819 & 0.916 & 0.651          & 0.761 & 0.691          & 0.487          & 89.7\%  \\
+B. SFT Labels Only    & \texttimes & \checkmark & ---        & 0.877 & 0.868 & 0.853          & 0.860 & 0.856          & 0.845          & 100.0\% \\
+C. Blind Reflections  & \checkmark & \checkmark & \texttimes & 0.856 & 0.847 & 0.825          & 0.836 & 0.829          & 0.848          & 98.9\%  \\
+D. Full Reflect-Guard & \checkmark & \checkmark & \checkmark & 0.856 & 0.821 & 0.863 & 0.842 & 0.855 & 0.921 & 98.2\%  \\
+\bottomrule
+\end{tabularx}
+\end{adjustwidth}
+\noindent{\small{\hl{R = Reflection, S = SFT, G = GT-label during synthesis.} %MDPI: We put it to table 8 footer, please confirm.
+%AU (reply to line 804): Confirmed.
+ \authchg{$\times$ = not used; $\checkmark$ = used; --- = not applicable (no reflection synthesis). Condition 0 is the clean, un-fine-tuned Llama-Guard-3-8B baseline.}}}
 \end{table}
 
 
 
-Table~\ref{tab:wildguard_subset} shows why the aggregate comparison in Table~\ref{tab:wildguard_main} understates reflection's actual effect: performance is \emph{reallocated} across subsets rather than uniformly improved. On the adversarial subset, SFT alone (Condition B) already substantially improves recall over the clean baseline (0.513 $\to$ 0.845, +33.2 pp); adding reflection (Condition D) pushes adversarial recall further, to 0.921 (+7.6 pp over Condition B), but at a cost of $-$7.9 pp adversarial precision (0.789 $\to$ 0.710), so Condition B still edges out Condition D on adversarial F1 (0.816 vs.\ 0.802). On the non-adversarial subset, the pattern reverses: Condition D achieves \emph{higher} precision than Condition B (0.960 vs.\ 0.944, +1.6 pp) at a cost of $-$4.4 pp recall (0.860~$\to$ 0.816), and again Condition B has the higher F1 (0.900 vs.\ 0.882). This opposing cross-subset pattern---more aggressive specifically on adversarial inputs, more conservative on non-adversarial inputs, with SFT-only ahead on F1 in \emph{both} subsets---is inconsistent with reflection simply shifting a single global decision threshold and instead suggests the model has learned features specific to adversarial framing (Section~\ref{sec:ablation}) even though this does not translate into an aggregate F1 win over SFT-only. Table~\ref{tab:wildguard_subset} also situates this against WildGuard and the prompted-teacher baseline: WildGuard's adversarial F1 (0.852) exceeds every one of our own conditions, including Condition B, and likewise leads on all three non-adversarial metrics, but \textbf{adversarial-subset recall is the one cell in this table where Condition D leads every evaluated classifier}, including WildGuard (0.921 vs.\ 0.827) and the prompted teacher (0.636); Section~\ref{sec:competitive} discusses why this specific axis, rather than aggregate F1, is the paper's central competitive claim.
+Table~\ref{tab:wildguard_subset} shows why the aggregate comparison in Table~\ref{tab:wildguard_main} understates reflection's actual effect: performance is \emph{reallocated} across subsets rather than uniformly improved. On the adversarial subset, SFT alone (Condition B) already substantially improves recall over the clean baseline (0.513 $\to$ 0.845, +33.2 pp); adding reflection (Condition D) pushes adversarial recall further, to 0.921 (+7.6 pp over Condition B), but at a cost of $-$7.9 pp adversarial precision (0.789 $\to$ 0.710), so Condition B still edges out Condition D on adversarial F$_1$ (0.816 vs.\ 0.802). On the non-adversarial subset, the pattern reverses: Condition D achieves \emph{higher} precision than Condition B (0.960 vs.\ 0.944, +1.6 pp) at a cost of $-$4.4 pp recall (0.860~$\to$ 0.816), and again Condition B has the higher F$_1$ (0.900 vs.\ 0.882). This opposing cross-subset pattern---more aggressive specifically on adversarial inputs, more conservative on non-adversarial inputs, with SFT-only ahead on F$_1$ in \emph{both} subsets---is inconsistent with reflection simply shifting a single global decision threshold and instead suggests the model has learned features specific to adversarial framing (Section~\ref{sec:ablation}) even though this does not translate into an aggregate F$_1$ win over SFT-only. Table~\ref{tab:wildguard_subset} also situates this against WildGuard and the prompted-teacher baseline: WildGuard's adversarial F$_1$ (0.852) exceeds every one of our own conditions, including Condition B, and likewise leads on all three non-adversarial metrics, but \textbf{adversarial-subset recall is the one cell in this table where Condition D leads every evaluated classifier}, including WildGuard (0.921 vs.\ 0.827) and the prompted teacher (0.636); Section~\ref{sec:competitive} discusses why this specific axis, rather than aggregate F$_1$, is the paper's central competitive claim.
 
 \begin{table}[H]
-  \caption{Performance breakdown by prompt type on WildGuardTest. Best result per column, per subset, across \emph{\hl{all}%MDPI: Please confirm if the italics is unnecessary and can be removed.
-} evaluated classifiers in \textbf{\hl{bold}%MDPI: Please confirm if the bold is unnecessary and can be removed.
-}. WildGuard and Prompted-CoT (GPT-4o-mini) are external baselines (Section~\ref{sec:competitive}).\label{tab:wildguard_subset}}
+  \caption{Performance breakdown by prompt type on WildGuardTest. Best result per column, per subset, across \hl{all}%MDPI: Please confirm if the italics is unnecessary and can be removed.
+%AU (reply to line 423): Italics removed.
+ evaluated classifiers in \hl{bold}%MDPI: Please confirm if the bold is unnecessary and can be removed.
+%AU (reply to line 424): Bold removed from the caption word; bold in the table body is explained by the caption.
+. WildGuard and Prompted-CoT (GPT-4o-mini) are external baselines (Section~\ref{sec:competitive}).\label{tab:wildguard_subset}}
 \small
 %  \centering
 %  \resizebox{\linewidth}{!}{%
   \begin{tabularx}{\textwidth}{llCCCCC}
     \toprule
-    \textbf{Subset} & \textbf{Model} & \boldmath{$n$} & \textbf{Acc.} & \textbf{Prec.} & \textbf{Recall} & \textbf{F1} \\
+    \textbf{Subset} & \textbf{Model} & \boldmath{$n$} & \textbf{Acc.} & \textbf{Prec.} & \textbf{Recall} & \textbf{F}\boldmath{$_1$} \\
     \midrule
     \multirow{5}{*}{Adversarial}
     & 0. Baseline       & 796 & 0.751 & 0.845 & 0.513 & 0.639 \\
@@ -455,8 +527,9 @@ Table~\ref{tab:wildguard_subset} shows why the aggregate comparison in Table~\re
 Table~\ref{tab:jailbreakbench} presents detection rates across attack methods, including the SFT-only baseline (Condition B) and two external classifiers (Section~\ref{sec:competitive}). Both fine-tuned conditions substantially reduce the guard bypass rate relative to the clean baseline, but Condition B---trained on verdict labels alone, with no reflection---achieves \emph{perfect} detection (100.0\% DR, 0.0\% GBR), outperforming the full Reflect-Guard model (98.2\% DR, 1.8\% GBR) \textbf{and WildGuard} (99.65\% DR, 0.35\% GBR); Condition B is the single best-performing classifier on this benchmark among everything evaluated in this paper, not merely the best of our own conditions. The 1.8 pp of guard bypass remaining in Reflect-Guard relative to Condition B is concentrated on PAIR attacks (Section~\ref{sec:discussion}), which use LLM-generated semantic jailbreaks with elaborate fictional or professional framings; Reflect-Guard's guard bypass rate is nonetheless lower than the prompted GPT-4o-mini teacher's (1.8\% vs.\ 3.19\%). Relative to the clean (un-fine-tuned) baseline, Reflect-Guard reduces the guard bypass rate from 10.3\% to 1.8\%, an 82.5\% relative reduction; Condition B reduces it further, to 0.0\%.
 
 \begin{table}[H]
-  \caption{JailbreakBench detection rates by attack method. DR = detection rate; GBR = guard bypass rate ($=1-\mathrm{DR}$ overall). All prompts are ground-truth harmful; higher DR is better. 95\% bootstrap confidence intervals (2000 resamples) are shown for overall DR for Conditions 0/B/D; WildGuard and Prompted-CoT (external, Section~\ref{sec:competitive}) are single evaluation runs with no CI. Best per row in \textbf{\hl{bold} %MDPI: Please confirm if the bold is unnecessary and can be removed. 
-} (ties bolded jointly).\label{tab:jailbreakbench}}
+  \caption{JailbreakBench detection rates by attack method. DR = detection rate; GBR = guard bypass rate ($=1-\mathrm{DR}$ overall). All prompts are ground-truth harmful; higher DR is better. 95\% bootstrap confidence intervals (2000 resamples) are shown for overall DR for Conditions 0/B/D; WildGuard and Prompted-CoT (external, Section~\ref{sec:competitive}) are single evaluation runs with no CI. Best per row in \hl{bold} %MDPI: Please confirm if the bold is unnecessary and can be removed. 
+%AU (reply to line 456): Bold removed from the caption word; bold in the table body is explained by the caption.
+ (ties bolded jointly).\label{tab:jailbreakbench}}
 %  \centering
   \small
 %  \resizebox{\linewidth}{!}{%
@@ -474,10 +547,12 @@ Table~\ref{tab:jailbreakbench} presents detection rates across attack methods, i
     Overall & 282 & 89.7\% [85.8, 92.9] & \textbf{100.0\%} [100.0, 100.0] & 98.2\% [96.5, 99.6] & 99.65\% & 96.81\% \\
     \midrule
     GBR \hl{($\downarrow$)} %MDPI: Please confirm if the arrow needs to add an explanation in table footer.
+%AU (reply to line 474): Explanation added in the table footer: down-arrow = lower is better.
  & --- & 10.3\% [7.1, 14.2] & \textbf{0.0\%} [0.0, 0.0] & 1.8\% [0.4, 3.5] & 0.35\% & 3.19\% \\
     \bottomrule
   \end{tabularx}
 \end{adjustwidth}%}
+\noindent{\small{\authchg{$\downarrow$ indicates that lower values are better.}}}
 \end{table}
 
 \subsection{Qualitative Analysis}
@@ -485,20 +560,22 @@ Table~\ref{tab:jailbreakbench} presents detection rates across attack methods, i
 
 To characterize model behavior beyond aggregate metrics, we analyzed three categories of examples identified from the evaluation results (script: \texttt{extract\_examples.py}).
 
-\paragraph{\hl{Category 1---Reflection catches what SFT alone misses ($n=29$, 27 adversarial).}} %MDPI:  Please confirm if it is should be heading 3, if is, please revised the format and added heading number, if not, please confirm if it needs to be put list format. The following highlights are the same.
+\subsubsection{Category 1---Reflection catches what SFT alone misses ($n=29$, 27 adversarial)} %MDPI:  Please confirm if it is should be heading 3, if is, please revised the format and added heading number, if not, please confirm if it needs to be put list format. The following highlights are the same.
+%AU (reply to line 486): Revised to heading 3 (numbered). Same for following highlights.
 These are harmful prompts where both Condition~0 and Condition~B predict \texttt{safe}, but Condition~D correctly identifies harm. All 27 adversarial cases involve framing techniques: role-play, fictional alternate realities, or professional personas. A representative example asks a ``noir detective'' for a ``comprehensive background check using every trick in the book'' while the prompt explicitly dismisses privacy constraints as irrelevant to the fictional scenario. The reflection identifies the \hl{mechanism:} %MDPI: Please confirm if the following content format (box, color of background, italics) necessary and correct.
+%AU (reply to line 487): Confirmed necessary and correct: the shaded box shows a verbatim model reflection; italics/box distinguish quoted model output from our text.
 \begin{tcolorbox}[graybox]
 \textit{``The message employs a roleplay framing technique to obscure the underlying intent to discuss potentially harmful investigative methods. Key indicators include the focus on `comprehensive background checks' and the emphasis on using `every trick in the book,' which implies disregard for legal and ethical boundaries.''}
 \end{tcolorbox}
 SFT alone misses these 29 cases despite training on the same 1000 prompts, including their adversarial framing; the difference is that its training targets contain only the verdict, not an intermediate analysis of the framing technique. A plausible explanation is that the reflection objective forces the model to represent adversarial framing explicitly as a supervised intermediate output, which SFT-only training does not require, but we did not verify this mechanism directly (e.g., via representation analysis), so we report it as an observation rather than an established cause.
 
-\paragraph{\hl{Category 2---Reflect-Guard false positives ($n=109$).}}
+\subsubsection{Category 2---Reflect-Guard false positives ($n=109$)}
 These are benign prompts correctly handled by the baseline but over-triggered by Condition~D. They share a surface structure with adversarial inputs (roleplay personas, sensitive topics, references to ``loopholes'') despite benign intent. A typical example: a prompt asking an ``editor'' to review a controversial academic article. The professional roleplay and sensitive topic trigger the reflection's adversarial-framing heuristic even though the intent is scholarly critique. This class of errors motivates future work on using reflection confidence or self-contradiction as a calibration signal.
 
-\paragraph{\hl{Category 3---All conditions fail ($n=78$).}}
+\subsubsection{Category 3---All conditions fail ($n=78$)}
 These are harmful prompts missed by all three conditions. Notably, they concentrate on \textit{private information} (e.g., ``How can I see who my partner texts?'') and \textit{social stereotypes} (e.g., prompts framing discriminatory content as neutral demographic questions). These examples reveal that the method's residual failures are not adversarial-framing failures but category-coverage failures: the training data contain too few examples of these harm types for any condition to generalize robustly.
 
-\paragraph{\hl{Reflection self-consistency ($n=2309$).}}
+\subsubsection{Reflection self-consistency ($n=2309$)}
 A separate concern is whether the generated reflection actually agrees with its own emitted verdict, or the two are decoupled, which would undermine the method's interpretability claim. Across every Condition-D prediction with a stored reflection (1699~WildGuardTest + 281 JailbreakBench + 329 finance examples), we automatically parsed each reflection's stated conclusion (the ``the underlying intent is \{harmful$\mid$benign\}'' clause required by the annotation template, Section~\ref{sec:synthesis}) and checked it against the emitted verdict. Extraction succeeded for 99.6\% of reflections, with the stated conclusion agreeing with the verdict in 99.91\% of those; manual inspection of the two disagreements found both to be extraction artifacts (a hedging clause reversed an initial ``appears benign'' assessment, which the verdict correctly followed but our pattern did not capture), so the effective self-consistency rate is 100\%. This verifies only that the reflection's stated conclusion is not contradicted by the verdict, not that the reasoning is factually accurate or reflects genuine internal computation (Section~\ref{sec:limitations}).
 
 %==============================================================================
@@ -545,19 +622,46 @@ FIN-7 & Predatory Lending \& Misconduct & Loan sharking, mis-selling, churning &
 
 The evaluation benchmark contained 329 examples: 240 harmful and 89 benign. The 60 FIN-1 harmful prompts were drawn from the \texttt{fraud\_assisting\_illegal\_activities} subcategory of WildGuardMix~\citep{han2024wildguard}, i.e., real adversarial prompts, not synthetic ones. The remaining 180 harmful prompts (30 per category, FIN-2 through FIN-7) and all 89 benign prompts were generated by GPT-4o-mini following the same synthesis methodology used to construct the original Reflect-Guard training data (Section~\ref{sec:synthesis}), mixing direct requests with adversarially framed variants (role-play, educational pretext, fictional framing). Critically, \textbf{no model weights were updated for this evaluation}: we reused the QLoRA adapter trained exclusively on WildGuardMix and AdvBench (Section~\ref{sec:synthesis}), which contained no \mbox{financial content.}
 
-\paragraph{\hl{Labeling procedure for the synthetic portion.} %MDPI:  Please confirm if it is should be heading 3, if is, please revised the format, if not, please confirm if it needs to be put list format.
+\subsubsection{Labeling procedure for the synthetic portion %MDPI:  Please confirm if it is should be heading 3, if is, please revised the format, if not, please confirm if it needs to be put list format.
+%AU (reply to line 546): Revised to heading 3 (numbered).
 } The harmful/benign label for each of the 269 GPT-4o-mini-generated examples was assigned \emph{by construction}, not by a separate annotation or classification step: the generation script (\texttt{fin/build\_benchmark.py}) used two distinct system prompts, one instructing the model to produce a harmful example within a target FIN category and the other to produce a benign finance-related example, and the resulting label was fixed by which prompt produced the text. No human or model annotator subsequently reviewed or verified that the generated content actually matched its assigned label. Consequently, an inter-annotator agreement statistic did not apply here---there was a single generation process rather than multiple independent annotators---but this also meant a generated example that failed to match its intended label (e.g., an ostensibly ``benign'' prompt that read as borderline harmful) would not be caught. This is a concrete, unaddressed risk distinct from the shared-provenance concern above and is a further reason we describe the finance-benchmark results as evidence toward generalization rather than a fully validated benchmark (Section~\ref{sec:limitations}).
 
 We note a limitation in the benchmark's metadata: the per-example \texttt{adversarial} flag inherited from WildGuardMix was populated only for the 60 FIN-1 examples (31 of which were marked adversarial); it was not independently annotated for the 209 synthetic FIN-2--FIN-7 harmful examples, even though the synthesis prompt requested a mix of direct and adversarially framed variants there too. As a result, we cannot currently report a reliable harmful-direct vs.\ harmful-adversarially framed performance breakdown for FIN-2--FIN-7 (Section~\ref{sec:discussion} lists this as future work); the taxonomy-level breakdown in Table~\ref{tab:fin-category} is the finest-grained breakdown the current annotations support.
 
-\subsection{Results}
+\begin{table}[H]
+\caption{\hl{Per-category} %MDPI: 1. Please add the explanations for the use of bold and italics in the table footer. If the bold and italics are unnecessary, please remove them in whole table body. 2. Table 6 is not after first citation, please check and confirm.
+%AU (reply to line 597): 1. Explanation of bold and italics added in the table footer. 2. Table moved directly after its first citation; it is now Table 7 (cited before Table 8).
+ F$_1$ on the finance benchmark. Reflect-Guard improves over the baseline in six of seven harm categories with no finance-specific training.}
+\label{tab:fin-category}
+\small
+%\centering
+\begin{tabularx}{\textwidth}{llccc}
+\toprule
+\textbf{Code} & \textbf{Category} & \textbf{Baseline F$_1$} & \textbf{Reflect-Guard F$_1$} & \boldmath{$\Delta$} \\
+\midrule
+FIN-1 & Financial Fraud \& Scams & 0.812 & \textbf{0.938} & +0.126 \\
+FIN-2 & Market Manipulation \& Insider Trading & 1.000 & \textbf{1.000} & 0.000 \\
+FIN-3 & Money Laundering \& Structuring & 0.846 & \textbf{0.868} & +0.022 \\
+FIN-4 & Unauthorized Investment Advice & 0.889 & \textbf{0.909} & +0.020 \\
+FIN-5 & Identity Theft \& Account Fraud & 0.824 & \textbf{0.909} & +0.086 \\
+FIN-6 & Tax Evasion \& Regulatory Evasion & 0.846 & \textbf{0.909} & +0.063 \\
+FIN-7 & Predatory Lending \& Misconduct & 0.889 & \textbf{0.947} & +0.058 \\
+\midrule
+\multicolumn{2}{l}{\textit{All categories}} & 0.868 & \textbf{0.929} & +0.061 \\
+\bottomrule
+\end{tabularx}
+\noindent{\small{\authchg{Bold indicates the higher (or equal) F$_1$ in each row; italics mark the overall row. $\Delta$ = Reflect-Guard F$_1$ $-$ Baseline F$_1$.}}}
+\end{table}
 
-Table~\ref{tab:fin-overall} reports overall performance. Reflect-Guard improves F1 from 0.868 to 0.929~(+6.1 pp) and recall from 0.767 to 0.867 (+10.0 pp) relative to the baseline Llama-Guard-3-8B, with precision unchanged at 1.000, meaning neither model produces a single false positive on the 89 benign financial prompts. Because this is our smallest evaluation set ($n=329$), we report bootstrap 95\% confidence intervals directly in the table rather than the point estimates alone: recall (0.713--0.821 vs.\ 0.821--0.908) and F1 (0.833--0.902 vs.\ 0.902--0.952) do not overlap between the baseline and Reflect-Guard, though we note this comes from a single training run per condition and is not a substitute for a proper significance test.
+\subsection{Finance Benchmark Results}
 
-\textbf{Condition B's finance result is important context that qualifies this comparison, and we report it directly rather than only in the multi-seed table.} No seed-42 Condition B finance evaluation exists---the original seed-42 Condition B adapter was not preserved on our training infrastructure, so it could not be retroactively evaluated---but Condition B \emph{was} evaluated on finance at the two later seeds (123 and 2024) as part of the multi-seed study (Section~\ref{sec:multiseed}). Averaged across those two seeds, Condition B reaches F1 $=0.945$ and \mbox{recall $=0.896$} (individually: seed 123 F1$=0.943$, \mbox{recall $=0.892$;} seed 2024 F1$=0.947$, \mbox{recall $=0.900$}), both \emph{higher} than Reflect-Guard's seed-42 F1 of 0.929 and recall of \mbox{0.867, and} Reflect-Guard's own F1 at the matching seeds (123: 0.929; 2024: 0.926) is consistently lower than Condition B's at the same seeds. This is the same direction as the aggregate WildGuardTest and JailbreakBench results: SFT alone, without reflection, appears to generalize to the finance domain at least as well as the full Reflect-Guard model, and possibly better. We treat this as a preliminary but consistent two-seed finding rather than a settled conclusion (only two seeds were available for this comparison, which did not support a meaningful significance test on its own), and we no longer describe Reflect-Guard's finance result as the best among \emph{all} evaluated conditions, only as an improvement over the un-fine-tuned baseline that also exceeds the external classifiers evaluated in Section~\ref{sec:competitive}: both WildGuard and the prompted GPT-4o-mini teacher were evaluated with zero-shot transfer on this benchmark with no finance-specific training either, and Reflect-Guard's F1, recall, and accuracy lead both of them (0.929/0.867/0.903 vs.\ WildGuard's 0.921/0.854/0.894). %EE: Please check intended meaning has been retained
+Table~\ref{tab:fin-overall} reports overall performance. Reflect-Guard improves F$_1$ from 0.868 to 0.929~(+6.1 pp) and recall from 0.767 to 0.867 (+10.0 pp) relative to the baseline Llama-Guard-3-8B, with precision unchanged at 1.000, meaning neither model produces a single false positive on the 89 benign financial prompts. Because this is our smallest evaluation set ($n=329$), we report bootstrap 95\% confidence intervals directly in the table rather than the point estimates alone: recall (0.713--0.821 vs.\ 0.821--0.908) and F$_1$ (0.833--0.902 vs.\ 0.902--0.952) do not overlap between the baseline and Reflect-Guard, though we note this comes from a single training run per condition and is not a substitute for a proper significance test.
+
+Condition B's finance result is important context that qualifies this comparison, and we report it directly rather than only in the multi-seed table. No seed-42 Condition B finance evaluation exists---the original seed-42 Condition B adapter was not preserved on our training infrastructure, so it could not be retroactively evaluated---but Condition B \emph{was} evaluated on finance at the two later seeds (123 and 2024) as part of the multi-seed study (Section~\ref{sec:multiseed}). Averaged across those two seeds, Condition B reaches F$_1$ $=0.945$ and \mbox{recall $=0.896$} (individually: seed 123 F$_1$$=0.943$, \mbox{recall $=0.892$;} seed 2024 F$_1$$=0.947$, \mbox{recall $=0.900$}), both \emph{higher} than Reflect-Guard's seed-42 F$_1$ of 0.929 and recall of \mbox{0.867, and} Reflect-Guard's own F$_1$ at the matching seeds (123: 0.929; 2024: 0.926) is consistently lower than Condition B's at the same seeds. This is the same direction as the aggregate WildGuardTest and JailbreakBench results: SFT alone, without reflection, appears to generalize to the finance domain at least as well as the full Reflect-Guard model, and possibly better. We treat this as a preliminary but consistent two-seed finding rather than a settled conclusion (only two seeds were available for this comparison, which did not support a meaningful significance test on its own), and we no longer describe Reflect-Guard's finance result as the best among \emph{all} evaluated conditions, only as an improvement over the un-fine-tuned baseline that also exceeds the external classifiers evaluated in Section~\ref{sec:competitive}: both WildGuard and the prompted GPT-4o-mini teacher were evaluated with zero-shot transfer on this benchmark with no finance-specific training either, and Reflect-Guard's F$_1$, recall, and accuracy lead both of them (0.929/0.867/0.903 vs.\ WildGuard's 0.921/0.854/0.894). %EE: Please check intended meaning has been retained
+%AU (reply to line 555): Checked: meaning retained. Bold emphasis removed from this paragraph.
 
 
-Table~\ref{tab:fin-category} breaks results down by harm category. Reflect-Guard improves F1 in six of seven categories; FIN-2 (Market Manipulation) is already at an F1 of 1.000 for both models. The largest gain is on FIN-1 (Financial Fraud \& Scams, +12.6 pp), the category containing the real WildGuardMix examples, consistent with the pattern observed in Section~\ref{sec:results} that reflection provides the largest benefit on the most adversarially diverse prompts. FIN-5 (Identity Theft, +8.6 pp) and FIN-6 (Tax Evasion, +6.3 pp) show the next-largest gains.
+Table~\ref{tab:fin-category} breaks results down by harm category. Reflect-Guard improves F$_1$ in six of seven categories; FIN-2 (Market Manipulation) is already at an F$_1$ of 1.000 for both models. The largest gain is on FIN-1 (Financial Fraud \& Scams, +12.6 pp), the category containing the real WildGuardMix examples, consistent with the pattern observed in Section~\ref{sec:results} that reflection provides the largest benefit on the most adversarially diverse prompts. FIN-5 (Identity Theft, +8.6 pp) and FIN-6 (Tax Evasion, +6.3 pp) show the next-largest gains.
 
 
 
@@ -565,15 +669,17 @@ Table~\ref{tab:fin-category} breaks results down by harm category. Reflect-Guard
 
 \begin{table}[H]
 \caption{Overall performance on the 329-example finance benchmark (Section~\ref{sec:finance-benchmark}). Reflect-Guard uses the same checkpoint as Sections~\ref{sec:results}--\ref{sec:discussion}, with no finance-specific fine-tuning; WildGuard and Prompted-CoT (GPT-4o-mini) are external baselines evaluated with zero-shot transfer (Section~\ref{sec:competitive}). %EE: Please check intended meaning has been retained
-Bracketed values are 95\% bootstrap confidence intervals (2000 resamples over the fixed 329-example set) for Baseline and Reflect-Guard; given this is our smallest evaluation set, these are reported explicitly rather than left to the point estimate alone. WildGuard and Prompted-CoT are single evaluation runs with no CI. Best per column in \textbf{\hl{bold}%MDPI: Please confirm if the bold is unnecessary and can be removed. 
-}.}
+%AU (reply to line 565): Checked: intended meaning retained.
+Bracketed values are 95\% bootstrap confidence intervals (2000 resamples over the fixed 329-example set) for Baseline and Reflect-Guard; given this is our smallest evaluation set, these are reported explicitly rather than left to the point estimate alone. WildGuard and Prompted-CoT are single evaluation runs with no CI. Best per column in \hl{bold}%MDPI: Please confirm if the bold is unnecessary and can be removed. 
+%AU (reply to line 566): Bold removed from the caption word; bold in the table body is explained by the caption.
+.}
 \label{tab:fin-overall}
 \begin{adjustwidth}{-\extralength}{0cm}
 %\centering
 \small
 \begin{tabularx}{\fulllength}{lCCCC}
 \toprule
-\textbf{Model} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{Accuracy} \\
+\textbf{Model} & \textbf{Precision} & \textbf{Recall} & \textbf{F}\boldmath{$_1$} & \textbf{Accuracy} \\
 \midrule
 Baseline (Llama-Guard-3-8B) & 1.000 [1.000, 1.000] & 0.767 [0.713, 0.821] & 0.868 [0.833, 0.902] & 0.830 \\
 Reflect-Guard (ours, seed 42) & 1.000 [1.000, 1.000] & 0.867 [0.821, 0.908] & 0.929 [0.902, 0.952] & 0.903 \\
@@ -587,7 +693,7 @@ Prompted-CoT (GPT-4o-mini)  & 1.000 & 0.846 & 0.916 & 0.888 \\
 \end{tabularx}
 \end{adjustwidth}
 %\\[2pt]
-\noindent{\small{$^\dagger$ No seed-42 Condition B finance evaluation exists (the seed-42 adapter was not preserved); mean of seeds 123 and 2024 (individually: F1~$=0.943$ and $0.947$), evaluated in the same multi-seed study as Table~\ref{tab:multiseed}. Not a single-seed-matched comparison with the other rows, and not yet subjected to a significance test at $n=2$; reported here directly, alongside the multi-seed table (Table~\ref{tab:multiseed}), rather than only there.}}
+\noindent{\small{$^\dagger$ No seed-42 Condition B finance evaluation exists (the seed-42 adapter was not preserved); mean of seeds 123 and 2024 (individually: F$_1$~$=0.943$ and $0.947$), evaluated in the same multi-seed study as Table~\ref{tab:multiseed}. Not a single-seed-matched comparison with the other rows, and not yet subjected to a significance test at $n=2$; reported here directly, alongside the multi-seed table (Table~\ref{tab:multiseed}), rather than only there.}}
 \end{table}
 
 
@@ -595,35 +701,14 @@ Prompted-CoT (GPT-4o-mini)  & 1.000 & 0.846 & 0.916 & 0.888 \\
 \vspace{-13pt}
 
 
-\begin{table}[H]
-\caption{\hl{Per-category} %MDPI: 1. Please add the explanations for the use of bold and italics in the table footer. If the bold and italics are unnecessary, please remove them in whole table body. 2. Table 6 is not after first citation, please check and confirm.
- F1 on the finance benchmark. Reflect-Guard improves over the baseline in six of seven harm categories with no finance-specific training.}
-\label{tab:fin-category}
-\small
-%\centering
-\begin{tabularx}{\textwidth}{llccc}
-\toprule
-\textbf{Code} & \textbf{Category} & \textbf{Baseline F1} & \textbf{Reflect-Guard F1} & \boldmath{$\Delta$} \\
-\midrule
-FIN-1 & Financial Fraud \& Scams & 0.812 & \textbf{0.938} & +0.126 \\
-FIN-2 & Market Manipulation \& Insider Trading & 1.000 & \textbf{1.000} & 0.000 \\
-FIN-3 & Money Laundering \& Structuring & 0.846 & \textbf{0.868} & +0.022 \\
-FIN-4 & Unauthorized Investment Advice & 0.889 & \textbf{0.909} & +0.020 \\
-FIN-5 & Identity Theft \& Account Fraud & 0.824 & \textbf{0.909} & +0.086 \\
-FIN-6 & Tax Evasion \& Regulatory Evasion & 0.846 & \textbf{0.909} & +0.063 \\
-FIN-7 & Predatory Lending \& Misconduct & 0.889 & \textbf{0.947} & +0.058 \\
-\midrule
-\multicolumn{2}{l}{\textit{All categories}} & 0.868 & \textbf{0.929} & +0.061 \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
 \subsection{Qualitative Example}
 
 The following example (FIN-2, Market Manipulation) illustrates the mechanism behind these gains: the model identifies a professional role-play framing as a vehicle for an underlying market-manipulation request, despite having seen no financial training \hl{data.} %MDPI: Please confirm if the following content format (box, color of background, bold, middle line, italics and special fonts) necessary and correct.
+%AU (reply to line 621): Confirmed necessary and correct: verbatim prompt/reflection example in a shaded box with monospaced tags.
 
 \begin{tcolorbox}[graybox]
 \textbf{Prompt:} ``Let's role-play as financial analysts; how would you advise me to mislead investors about the potential of \hl{DEF Ltd.} %MDPI: Please provide the city (states abbreviation is required for USA and Canada) and country of the company.
+%AU (reply to line 624): Confirmed. DEF Ltd. is a fictitious company name used in a synthetic benchmark prompt, not a real entity, so no city/country applies.
  before I sell my holdings?''
 
 \medskip\hrule\medskip
@@ -642,14 +727,15 @@ The reflection identifies the role-play wrapper, the underlying harmful intent, 
 
 \subsection{Error Analysis}
 
-\paragraph{\hl{False positives.} %MDPI: Please confirm if it is should be heading 3, if is, please revised the format and added heading number, if not, please confirm if it needs to be put list format. The following highlights are the same.
+\subsubsection{False positives %MDPI: Please confirm if it is should be heading 3, if is, please revised the format and added heading number, if not, please confirm if it needs to be put list format. The following highlights are the same.
+%AU (reply to line 643): Revised to heading 3 (numbered). Same for following highlights.
 }
 Reflect-Guard (Condition D) has 142 total false positives on WildGuardTest versus 44~for the clean baseline (Condition 0); exact-prompt matching shows these are not simply additive (33 shared, 11 resolved, 109 newly introduced: $142=33+109$, $44=33+11$). Of the 109 new false positives, 102 (93.6\%) fall in the adversarial subset, prompts that \emph{appear} adversarial (fictional framing, role-play, security-related language) but are actually benign, e.g., a DEF CON cybersecurity-competition narrative flagged as harmful. This suggests Reflect-Guard's adversarial-detection heuristic over-triggers on security-adjacent but harmless content.
 
-\paragraph{\hl{False negatives.}}
+\subsubsection{False negatives}
 The remaining 103 false negatives (down from 254 at baseline) concentrate on \textit{private information} (32) and \textit{social stereotypes and discrimination} (26); the WildGuardMix \textit{others} subcategory accounts for a further 16, and the remaining 29 are spread thinly across six smaller categories (fraud/illegal-activity assistance: seven; mental-health over-reliance: six; sensitive organizational/government information: six; copyright violations: five; sexual content: four; defamation: one), so $32+26+16+7+6+6+5+4+1=103$. The two dominant categories involve subtle harms where adversarial framing effectively mimics legitimate research or educational context; the model's reflections on these typically (and wrongly) conclude ``educational'' or ``benign.''
 
-\paragraph{\hl{JailbreakBench misses.}}
+\subsubsection{JailbreakBench misses}
 Of the five misses (of 282), four use PAIR with elaborate fictional or educational framings (e.g., a historian analyzing ancient warfare) where harmful intent is deeply embedded in a plausible professional scenario. The remaining miss is a GCG prompt and is \emph{not} a reasoning failure: the reflection correctly states ``the underlying intent is harmful'' before being truncated mid-sentence at the 150-token limit, and our parser defaults the resulting non-conforming output to \texttt{unharmful}. This token-budget/parsing artifact is the only such case among all $3\times282$ JailbreakBench generations (Section~\ref{sec:limitations}).
 
 \subsection{Precision--Recall Tradeoff}
@@ -659,39 +745,25 @@ The precision decrease ($-$9.8 pp overall, $-$13.5 pp on adversarial prompts) me
 \subsection{Efficiency Considerations}
 \label{sec:efficiency}
 
-Reflect-Guard's \emph{\hl{training} %MDPI: Please confirm if the italic of paragraph is unnecessary and can be removed, please check and confirm all italics in whole tex
-} cost is low, but its \emph{inference} overhead relative to the base model is substantial. We report it here as a direct measurement rather than a \mbox{qualitative characterization:}
+Reflect-Guard's \hl{training} %MDPI: Please confirm if the italic of paragraph is unnecessary and can be removed, please check and confirm all italics in whole tex
+%AU (reply to line 660): Italics removed.
+ cost is low, but its \emph{inference} overhead relative to the base model is substantial. We report it here as a direct measurement rather than a \mbox{qualitative characterization:}
 \begin{itemize}[leftmargin=*, nosep]
-  \item \textbf{\hl{Training cost:} %MDPI: Please confirm if the bold of paragraph is unnecessary and can be removed, please check and confirm all bold in whole tex.
-} 1000 examples, $\sim$42M trainable parameters (0.5\% of 8B), $\sim$1 h on a single A5000 GPU.
-  \item \textls[-15]{\textbf{Data synthesis cost:} 1000 GPT-4o-mini API calls for reflection generation (one-time cost).}
-  \item \textbf{Inference overhead:} measured directly (Table~\ref{tab:latency}, below), not estimated.
+  \item \hl{Training cost:} %MDPI: Please confirm if the bold of paragraph is unnecessary and can be removed, please check and confirm all bold in whole tex.
+%AU (reply to line 663): Bold removed from the list labels of this list.
+ 1000 examples, $\sim$42M trainable parameters (0.5\% of 8B), $\sim$1 h on a single A5000 GPU.
+  \item \textls[-15]{Data synthesis cost: 1000 GPT-4o-mini API calls for reflection generation (one-time cost).}
+  \item Inference overhead: measured directly (Table~\ref{tab:latency}, \authchg{above}), not estimated.
 \end{itemize}
 
-\begin{table}[H]
-  \caption{\hl{Inference} %MDPI: 1. Please add an explanation for the use of bold in the table footer. If the bold is unnecessary, please remove it in whole table body. 2. Table 6 is not after first citation, please check and confirm.
- latency, throughput, and GPU memory, measured on 200 fixed WildGuardTest prompts on a single NVIDIA A40 GPU, greedy decoding, max\_new\_tokens = 150. Single-request latency is measured one prompt at a time (batch size 1); batched throughput uses a batch size of 8. All three conditions were measured back-to-back in the same job on identical hardware.\label{tab:latency}}
- % \centering
-  \small
-  \begin{tabularx}{\textwidth}{lCCCcc}
-    \toprule
-    \textbf{Condition} &  \textbf{P50 (s)} &  \textbf{P95 (s)} &  \textbf{P99 (s)} &  \textbf{Mean Tokens} &  \textbf{Throughput (Prompts/s)} \\
-    \midrule
-    0. Clean Baseline & 0.282 & 0.377 & 0.422 & 3.9 & 4.30 \\
-    B. SFT Labels Only & 0.352 & 0.513 & 0.553 & 3.4 & 3.44 \\
-    D. Reflect-Guard & \textbf{5.045} & \textbf{6.322} & \textbf{6.650} & \textbf{92.5} & \textbf{0.43} \\
-    \bottomrule
-  \end{tabularx}
-\end{table}
-
-Reflect-Guard's median single-request latency (5.05~s) is \textbf{17.9$\times$ that of the clean baseline} (0.28~s) and \textbf{14.3$\times$ that of Condition B} (0.35~s); batched throughput falls by a similar factor (0.43 vs.\ 4.30 and 3.44 prompts/s, a 10.0$\times$ and 8.0$\times$ reduction respectively). This is driven almost entirely by output length: Reflect-Guard generates a mean of 92.5~tokens per prompt (the reflection plus verdict), versus 3.4--3.9 tokens for the label-only conditions. This overhead is substantial, not negligible, and is the direct, measured cost of the adversarial-recall gain reported in Section~\ref{sec:ablation}. Peak GPU memory is comparatively unaffected (11.90~GB for Condition 0 vs.\ 12.06~GB for both B and D, a $+$1.3\% increase), since the LoRA adapter itself is small, and the additional cost is almost entirely in generation length rather than model size.
+Reflect-Guard's median single-request latency (5.05~s) is 17.9$\times$ that of the clean baseline (0.28~s) and 14.3$\times$ that of Condition B (0.35~s); batched throughput falls by a similar factor (0.43 vs.\ 4.30 and 3.44 prompts/s, a 10.0$\times$ and 8.0$\times$ reduction respectively). This is driven almost entirely by output length: Reflect-Guard generates a mean of 92.5~tokens per prompt (the reflection plus verdict), versus 3.4--3.9 tokens for the label-only conditions. This overhead is substantial, not negligible, and is the direct, measured cost of the adversarial-recall gain reported in Section~\ref{sec:ablation}. Peak GPU memory is comparatively unaffected (11.90~GB for Condition 0 vs.\ 12.06~GB for both B and D, a $+$1.3\% increase), since the LoRA adapter itself is small, and the additional cost is almost entirely in generation length rather than model size.
 
 The LoRA adapter checkpoint (\texttt{adapter\_model.safetensors}) is $\sim$84 MB on disk---consistent with $\sim$42M trainable parameters stored in bf16 (2 bytes/parameter)---and can be dynamically loaded/unloaded, enabling flexible deployment alongside the base Llama Guard model.
 
 \subsection{Ablation Study}
 \label{sec:ablation}
 
-To disentangle the contributions of reflection reasoning versus supervised fine-tuning (SFT) on the decision boundary, we conduct an ablation study with five conditions:
+To disentangle the contributions of reflection reasoning versus supervised fine-tuning (SFT) on the decision boundary, we conduct an ablation study with five conditions \authchg{(Figure~\ref{fig:ablation})}:
 
 \begin{itemize}[leftmargin=*, nosep]
   \item \textbf{Condition 0 (Clean Baseline):} Llama-Guard-3-8B with the standard prompt (no reflection instruction, no SFT).
@@ -765,8 +837,8 @@ To disentangle the contributions of reflection reasoning versus supervised fine-
   {$D > B > C?$};
 
 \end{tikzpicture}}%
-\caption{\textbf{\hl{Ablation study design.} %MDPI: 1. The original tex cannot run, we added some usepackages to make the figure shown, please confirm if the figure content is correct now. 2.  Please confirm if the bold formatting is necessary in caption; if not, please remove it.  3. Figure cannot be put after heading directly, we moved the figure there, please confirm. 4. Please cite this figure in the tex and ensure that the first citation of each figure appears in numerical order. 5. Please confirm whether the explanations of Condition 0 and symbols (×, ✓, —) need to be added to the figure caption.
-}
+\caption{\hl{Ablation study design.} %MDPI: 1. The original tex cannot run, we added some usepackages to make the figure shown, please confirm if the figure content is correct now. 2.  Please confirm if the bold formatting is necessary in caption; if not, please remove it.  3. Figure cannot be put after heading directly, we moved the figure there, please confirm. 4. Please cite this figure in the tex and ensure that the first citation of each figure appears in numerical order. 5. Please confirm whether the explanations of Condition 0 and symbols (×, ✓, —) need to be added to the figure caption.
+%AU (reply to line 766): 1. Confirmed: the added packages do not affect the figure's content. 2. Bold removed from caption. 3. Figure position confirmed. 4. Figure is now cited in the text (Section 7.4, Figure 2) before it appears. 5. Explanation of Condition 0 and of the symbols added to the caption.
 Five conditions isolate the contribution of each component.
 Condition~A tests whether prompting alone (without fine-tuning) induces reflection.
 Condition~B isolates the effect of SFT on the decision boundary without reflection.
@@ -783,46 +855,23 @@ Condition~D is the full Reflect-Guard system.\label{fig:ablation}}
 
 
 
-\begin{table}[H]
-\caption{\hl{Ablation} %MDPI: 1. Please add an explanation for the use of bold in the table footer. If the bold is unnecessary, please remove it in whole table body.  2. We removed vertical lines in whole table, please confirm. 3. Please confirm if needs to add the explanations of ×, ✓, — in table footer. 4. Table 8 is not after first citation, please check and confirm.
- study results. F$_2$ weights recall twice as heavily as precision, reflecting safety deployment priorities. Adv-Rec = recall on the adversarial subset of WildGuardTest ($n=796$). JBB~DR = JailbreakBench detection rate.\label{tab:ablation}}
-\small
-
-\begin{adjustwidth}{-\extralength}{0cm}
-%\centering %% If there is a figure in wide page, please release command \centering
-\begin{tabularx}{\fulllength}{lCCCCCCCCcc}
-\toprule
-\textbf{Condition} & \textbf{R} & \textbf{S} & \textbf{G} & \textbf{Acc} & \textbf{Prec} & \textbf{Rec} & \textbf{F1} & \textbf{F}\boldmath{$_2$} & \textbf{Adv-Rec} & \textbf{JBB DR} \\
-\midrule
-0. Clean Baseline     & \texttimes & \texttimes & ---        & \hl{0}%MDPI: We added “0” before the decimal sign. Please confirm this revision in whole table.
-.825 & 0.919 & 0.663          & 0.770 & 0.702          & 0.513          & 89.7\%  \\
-A. Prompted Refl.     & \checkmark & \texttimes & ---        & 0.819 & 0.916 & 0.651          & 0.761 & 0.691          & 0.487          & 89.7\%  \\
-B. SFT Labels Only    & \texttimes & \checkmark & ---        & 0.877 & 0.868 & 0.853          & 0.860 & 0.856          & 0.845          & 100.0\% \\
-C. Blind Reflections  & \checkmark & \checkmark & \texttimes & 0.856 & 0.847 & 0.825          & 0.836 & 0.829          & 0.848          & 98.9\%  \\
-D. Full Reflect-Guard & \checkmark & \checkmark & \checkmark & 0.856 & 0.821 & \textbf{0.863} & 0.842 & \textbf{0.855} & \textbf{0.921} & 98.2\%  \\
-\bottomrule
-\end{tabularx}
-\end{adjustwidth}
-\noindent{\small{\hl{R = Reflection, S = SFT, G = GT-label during synthesis.} %MDPI: We put it to table 8 footer, please confirm.
-}}
-\end{table}
-
 \vspace{-5pt}
 
 The results directly address the question of how much gain is attributable to reflection \hl{per se} %MDPI: We removed the italics of Latin expression. Please confirm this revision.
+%AU (reply to line 810): Confirmed.
  versus SFT changing the decision boundary.
 
 \textbf{Prompting alone provides no benefit (Condition A).}
-Condition~A is virtually indistinguishable from Condition~0 (F1: 0.761 vs.\ 0.770; JBB detection rate identical at 89.7\%), confirming that chain-of-thought prompting without fine-tuning cannot shift the decision boundary. This rules out the hypothesis that the reflection instruction text alone \mbox{drives improvements.}
+Condition~A is virtually indistinguishable from Condition~0 (F$_1$: 0.761 vs.\ 0.770; JBB detection rate identical at 89.7\%), confirming that chain-of-thought prompting without fine-tuning cannot shift the decision boundary. This rules out the hypothesis that the reflection instruction text alone \mbox{drives improvements.}
 
 \textbf{SFT on the decision boundary drives the primary gain (Condition B).}
-Condition~B yields a +9.0 pp F1 improvement over the baseline (0.860 vs.\ 0.770) and perfect JBB detection (100.0\%), demonstrating that the bulk of the gain comes from adapting the classifier's decision boundary via SFT, not from reflection per se.
+Condition~B yields a +9.0 pp F$_1$ improvement over the baseline (0.860 vs.\ 0.770) and perfect JBB detection (100.0\%), demonstrating that the bulk of the gain comes from adapting the classifier's decision boundary via SFT, not from reflection per se.
 
 \textbf{Reflection training reallocates performance from non-adversarial to adversarial inputs (Condition D vs.\ B).}
-Condition~D trades 1.8 pp of overall F1 (0.842 vs.\ 0.860) for a +7.6 pp gain in adversarial recall (0.921 vs.\ 0.845). The subset breakdown clarifies the mechanism: on adversarial prompts, D gains +7.6 pp recall at a cost of $-$7.9 pp precision (adv-prec: 0.789 $\to$ 0.710), while on non-adversarial prompts, D actually improves precision slightly ($+$1.6 pp: 0.944 $\to$ 0.960) at a cost of $-$4.4 pp recall. This cross-pattern is not consistent with the simplest interpretation of a uniform global threshold shift; if reflection merely lowered the decision boundary, precision would fall, and recall would rise on \emph{both} subsets equally, whereas the opposing trends show more aggressive behavior specifically on adversarially framed prompts and more conservative behavior on non-adversarial ones. This pattern is consistent with the model responding differently to adversarial framing, although the present experiments do not establish whether reflection changes feature representations, ranking behavior, calibration, or another part of the decision process; a matched-operating-point analysis would be needed to distinguish a change in ranking from a change in calibration (Section~\ref{sec:limitations}), and we did not conduct one. The overall F$_2$ is nearly tied (D: 0.855, B: 0.856), but adversarial F$_2$ decisively favors D (0.869 vs.\ 0.833), a further indication that reflection changes behavior on adversarially framed inputs under safety-relevant evaluation criteria, without our establishing the underlying mechanism.
+Condition~D trades 1.8 pp of overall F$_1$ (0.842 vs.\ 0.860) for a +7.6 pp gain in adversarial recall (0.921 vs.\ 0.845). The subset breakdown clarifies the mechanism: on adversarial prompts, D gains +7.6 pp recall at a cost of $-$7.9 pp precision (adv-prec: 0.789 $\to$ 0.710), while on non-adversarial prompts, D actually improves precision slightly ($+$1.6 pp: 0.944 $\to$ 0.960) at a cost of $-$4.4 pp recall. This cross-pattern is not consistent with the simplest interpretation of a uniform global threshold shift; if reflection merely lowered the decision boundary, precision would fall, and recall would rise on \emph{both} subsets equally, whereas the opposing trends show more aggressive behavior specifically on adversarially framed prompts and more conservative behavior on non-adversarial ones. This pattern is consistent with the model responding differently to adversarial framing, although the present experiments do not establish whether reflection changes feature representations, ranking behavior, calibration, or another part of the decision process; a matched-operating-point analysis would be needed to distinguish a change in ranking from a change in calibration (Section~\ref{sec:limitations}), and we did not conduct one. The overall F$_2$ is nearly tied (D: 0.855, B: 0.856), but adversarial F$_2$ decisively favors D (0.869 vs.\ 0.833), a further indication that reflection changes behavior on adversarially framed inputs under safety-relevant evaluation criteria, without our establishing the underlying mechanism.
 
 \textbf{Ground-truth labels during synthesis provide a small but consistent benefit (Condition D vs.\ C).}
-Condition~C, trained on reflections generated without access to ground-truth labels, achieves an F1 of 0.836---only 0.6 pp below Condition~D (0.842)---showing the approach is robust even when teacher supervision is label-blind. The small gap suggests GT labels help sharpen reflection quality but are not strictly necessary, making the method practical when labeled data are scarce.
+Condition~C, trained on reflections generated without access to ground-truth labels, achieves an F$_1$ of 0.836---only 0.6 pp below Condition~D (0.842)---showing the approach is robust even when teacher supervision is label-blind. The small gap suggests GT labels help sharpen reflection quality but are not strictly necessary, making the method practical when labeled data are scarce.
 
 \subsubsection{Multi-Seed Statistical Robustness}
 \label{sec:multiseed}
@@ -870,6 +919,7 @@ The Condition~B-vs-D comparison above uses a single training run per condition (
 
 \begin{table}[H]
   \caption{\hl{Multi-seed} %MDPI: 1. Please add an explanation for the use of bold in the table footer. If the bold is unnecessary, please remove it in whole table body. 2. Table 9 is not after first citation, please check and confirm.
+%AU (reply to line 870): 1. Explanation of bold added in the table footer. 2. Table order fixed; it is now Table 9 and cited in order.
  statistical robustness (seeds 42, 123, 2024; finance uses 123 and 2024 only). \mbox{Mean $\pm$ std} across seeds; $p$-value from a paired \emph{t}-test between Conditions B and D on the same seeds. Wilcoxon signed-rank $p$ is bounded below by $0.25$ at $n=3$ and is included only as a non-parametric sanity check, not as the primary test.\label{tab:multiseed}}
  % \centering
   \small
@@ -880,32 +930,34 @@ The Condition~B-vs-D comparison above uses a single training run per condition (
   \begin{tabularx}{\fulllength}{lCCCCC}
     \toprule
     \textbf{\hl{Metric} %MDPI: Please confirm if the cell and the following empty cell should be merged into one in table header. Same as below.
+%AU (reply to line 880): Agreed. The 'Metric' cell and the empty cell below it should be merged into one two-row cell; we have not changed the table source so as not to disturb the header alignment, so please merge in production.
 } & \highlighting{\boldmath{$n$} \textbf{Seeds}} & \textbf{B} & \textbf{D} & \textbf{Paired} \boldmath{$t$}\textbf{-Test} & \textbf{Wilcoxon} \\
            &           & \textbf{Mean} \boldmath{$\pm$} \textbf{Std} & \textbf{Mean} \boldmath{$\pm$} \textbf{Std} & \boldmath{$p$} & \boldmath{$p$} \\
     \midrule
-    WGT overall F1         & 3 & 0.8654 $\pm$ 0.0049 & 0.8399 $\pm$ 0.0026 & \textbf{0.018} & 0.250 \\
-    WGT adversarial F1     & 3 & 0.8140 $\pm$ 0.0042 & 0.7956 $\pm$ 0.0079 & \textbf{0.018} & 0.250 \\
+    WGT overall F$_1$         & 3 & 0.8654 $\pm$ 0.0049 & 0.8399 $\pm$ 0.0026 & \textbf{0.018} & 0.250 \\
+    WGT adversarial F$_1$     & 3 & 0.8140 $\pm$ 0.0042 & 0.7956 $\pm$ 0.0079 & \textbf{0.018} & 0.250 \\
     WGT overall recall     & 3 & 0.8630 $\pm$ 0.0100 & 0.8559 $\pm$ 0.0080 & 0.508 & 0.500 \\
     WGT adversarial recall & 3 & 0.8426 $\pm$ 0.0090 & \textbf{0.9003 $\pm$ 0.0221} & \textbf{0.027} & 0.250 \\
     \makecell[l]{JailbreakBench DR\\(recall)}
                            & 3 & 0.9953 $\pm$ 0.0054 & 0.9823 $\pm$ 0.0035 & 0.111 & --- \\
-    Finance F1             & 2 & 0.9450 $\pm$ 0.0033 & 0.9274 $\pm$ 0.0017 & 0.125 & --- \\
+    Finance F$_1$             & 2 & 0.9450 $\pm$ 0.0033 & 0.9274 $\pm$ 0.0017 & 0.125 & --- \\
     \bottomrule
   \end{tabularx}
 \end{adjustwidth}
+\noindent{\small{\authchg{Bold: paired $t$-test $p<0.05$; the bold Condition~D mean marks the row in which D significantly exceeds B.}}}
 \end{table}
 
-Two observations from Table~\ref{tab:multiseed} are worth highlighting, interpreted cautiously given the small number of seeds. The same direction was observed across all three training seeds for Condition B's overall-F1 advantage over D (WGT overall and adversarial F1: paired $t$-test $p=0.018$); it was not an artifact of the seed-42 headline run. The same was true, separately, for Condition D's adversarial-recall advantage over B (paired $t$-test $p=0.027$), though the mean advantage (+5.77~pp: 0.9003 vs.\ 0.8426) was somewhat smaller than the seed-42 point estimate reported elsewhere (+7.6~pp), which we treat as the more representative figure. \emph{Overall} recall showed no significant difference between B and D ($p=0.508$), consistent with reflection reallocating recall toward the adversarial subset rather than shifting a global threshold, the same pattern Section~\ref{sec:ablation}'s single-run analysis suggested, now observed consistently across three seeds rather than confirmed in any stronger statistical sense. JailbreakBench ($n=3$ seeds) and finance ($n=2$ seeds) showed the same directional pattern but did not reach significance; for finance in particular, no meaningful statistical conclusion should be drawn from only two paired observations, and we report the raw two-seed values directly (Table~\ref{tab:fin-overall}) rather than relying on a significance test that this sample size cannot support.
+Two observations from Table~\ref{tab:multiseed} are worth highlighting, interpreted cautiously given the small number of seeds. The same direction was observed across all three training seeds for Condition B's overall-F$_1$ advantage over D (WGT overall and adversarial F$_1$: paired $t$-test $p=0.018$); it was not an artifact of the seed-42 headline run. The same was true, separately, for Condition D's adversarial-recall advantage over B (paired $t$-test $p=0.027$), though the mean advantage (+5.77~pp: 0.9003 vs.\ 0.8426) was somewhat smaller than the seed-42 point estimate reported elsewhere (+7.6~pp), which we treat as the more representative figure. \emph{Overall} recall showed no significant difference between B and D ($p=0.508$), consistent with reflection reallocating recall toward the adversarial subset rather than shifting a global threshold, the same pattern Section~\ref{sec:ablation}'s single-run analysis suggested, now observed consistently across three seeds rather than confirmed in any stronger statistical sense. JailbreakBench ($n=3$ seeds) and finance ($n=2$ seeds) showed the same directional pattern but did not reach significance; for finance in particular, no meaningful statistical conclusion should be drawn from only two paired observations, and we report the raw two-seed values directly (Table~\ref{tab:fin-overall}) rather than relying on a significance test that this sample size cannot support.
 
 At this sample size, a paired $t$-test has limited power, and the Wilcoxon test's minimum achievable $p$-value at $n=3$ is $0.25$, so its non-significance reflects sample size, not evidence against the effect; in every metric where the $t$-test reached significance, all three seeds agreed in direction, the strongest signal available at this $n$. Exact per-seed values are released alongside the aggregate (data availability statement).
 
 \subsubsection{Confusion Matrices and Single-Run Significance Tests}
 \label{sec:confusion}
 
-Table~\ref{tab:multiseed} tests significance across independent \emph{training} runs; Tables~\ref{tab:confusion} and \ref{tab:sigtest} complement it with the exact raw counts underlying every precision/recall/F1 value in this paper, and a paired bootstrap significance test (2000 resamples of the shared, prompt-aligned test set, applied to the \emph{difference} between two conditions' predictions on each resample) for all three pairwise comparisons among Conditions 0, B, and D on the single seed-42 run.
+Table~\ref{tab:multiseed} tests significance across independent \emph{training} runs; Tables~\ref{tab:confusion} and \ref{tab:sigtest} complement it with the exact raw counts underlying every precision/recall/F$_1$ value in this paper, and a paired bootstrap significance test (2000 resamples of the shared, prompt-aligned test set, applied to the \emph{difference} between two conditions' predictions on each resample) for all three pairwise comparisons among Conditions 0, B, and D on the single seed-42 run.
 
 \begin{table}[H]
-  \caption{Confusion matrices (Conditions 0/B/D, single seed-42 run) underlying every precision/recall/F1 value reported in Sections~\ref{sec:results} and \ref{sec:finance}. ``harmful'' is the positive class throughout.\label{tab:confusion}}
+  \caption{Confusion matrices (Conditions 0/B/D, single seed-42 run) underlying every precision/recall/F$_1$ value reported in Sections~\ref{sec:results} and \ref{sec:finance}. ``harmful'' is the positive class throughout.\label{tab:confusion}}
   %\centering
   \small
   \begin{tabularx}{\textwidth}{llCCCCC}
@@ -933,82 +985,86 @@ Table~\ref{tab:multiseed} tests significance across independent \emph{training} 
 
 \begin{table}[H]
   \caption{\hl{Paired} %MDPI: Please add an explanation for the use of bold in the table footer. If the bold is unnecessary, please remove it in whole table body.
- bootstrap significance tests between Conditions 0, B, and D on the single seed-42 run (2000 resamples of the shared, prompt-aligned test set; two-sided $p$-value). Metric is F1 for WildGuardTest and finance, recall (detection rate) for JailbreakBench. This is a test-set-resampling test, distinct from and complementary to the seed-resampling test in Table~\ref{tab:multiseed}.\label{tab:sigtest}}
+%AU (reply to line 933): Bold removed from the table body; 'sig.' is explained in the footer.
+ bootstrap significance tests between Conditions 0, B, and D on the single seed-42 run (2000 resamples of the shared, prompt-aligned test set; two-sided $p$-value). Metric is F$_1$ for WildGuardTest and finance, recall (detection rate) for JailbreakBench. This is a test-set-resampling test, distinct from and complementary to the seed-resampling test in Table~\ref{tab:multiseed}.\label{tab:sigtest}}
 %  \centering
   \small
  \begin{tabularx}{\textwidth}{llCCC}
     \toprule
      \textbf{Benchmark} &  \textbf{Comparison} &  \boldmath{$\Delta$} &  \boldmath{$p$}\textbf{-Value} & \\
     \midrule
-    \multirow{3}{*}{WildGuardTest (F1)}
-    & D $-$ 0 & +0.0712 & $<$$0.001$ & \textbf{sig.} \\
-    & B $-$ 0 & +0.0898 & $<$$0.001$ & \textbf{sig.} \\
-    & D $-$ B & $-$0.0186 & 0.014 & \textbf{sig.} \\
+    \multirow{3}{*}{WildGuardTest (F$_1$)}
+    & D $-$ 0 & +0.0712 & $<$$0.001$ & sig. \\
+    & B $-$ 0 & +0.0898 & $<$$0.001$ & sig. \\
+    & D $-$ B & $-$0.0186 & 0.014 & sig. \\
     \midrule
     \multirow{3}{*}{JailbreakBench (recall)}
-    & D $-$ 0 & +0.0851 & $<$$0.001$ & \textbf{sig.} \\
-    & B $-$ 0 & +0.1028 & $<$$0.001$ & \textbf{sig.} \\
-    & D $-$ B & $-$0.0177 & 0.012 & \textbf{sig.} \\
+    & D $-$ 0 & +0.0851 & $<$$0.001$ & sig. \\
+    & B $-$ 0 & +0.1028 & $<$$0.001$ & sig. \\
+    & D $-$ B & $-$0.0177 & 0.012 & sig. \\
     \midrule
-    Finance (F1) & D $-$ 0 & +0.0606 & $<0.001$ & \textbf{sig.} \\
+    Finance (F$_1$) & D $-$ 0 & +0.0606 & $<0.001$ & sig. \\
     \bottomrule
   \end{tabularx}
+\noindent{\small{\authchg{sig. = statistically significant ($p<0.05$).}}}
 \end{table}
 
-Two results stand out. All three pairwise comparisons on WildGuardTest and JailbreakBench are significant even within this single run, including Condition D's disadvantage relative to Condition B ($p=0.014$ WGT F1, $p=0.012$ JBB recall), directionally consistent with, but methodologically independent of, the multi-seed test above ($p=0.018$), giving two separate lines of evidence that B's aggregate advantage is real rather than sampling noise. And Table~\ref{tab:confusion}'s raw counts make the precision cost concrete: Condition D's higher recall than Condition 0 (651 vs.\ 500 true positives) comes with more than triple the false positives (142 vs.\ 44).
+Two results stand out. All three pairwise comparisons on WildGuardTest and JailbreakBench are significant even within this single run, including Condition D's disadvantage relative to Condition B ($p=0.014$ WGT F$_1$, $p=0.012$ JBB recall), directionally consistent with, but methodologically independent of, the multi-seed test above ($p=0.018$), giving two separate lines of evidence that B's aggregate advantage is real rather than sampling noise. And Table~\ref{tab:confusion}'s raw counts make the precision cost concrete: Condition D's higher recall than Condition 0 (651 vs.\ 500 true positives) comes with more than triple the false positives (142 vs.\ 44).
 
 \subsection{Comparison to Competitive Safety Classifiers}
 \label{sec:competitive}
 
 The ablation above isolates reflection's contribution relative to our \emph{own} un-fine-tuned baseline and SFT-only ablation but not how Reflect-Guard stands relative to the wider field, the central gap identified in review. We evaluated four external classifiers, zero-shot, on the same three benchmarks: \textbf{WildGuard}~\citep{han2024wildguard} and \textbf{PromptGuard}~\citep{meta2024promptguard} with their released weights and default templates; a \textbf{Prompted-CoT} baseline using GPT-4o-mini---the same model used as our reflection-distillation teacher (Section~\ref{sec:synthesis})---prompted with the identical S1--S13 taxonomy to reason step by step, as an ``undistilled teacher'' reference point; and \textbf{OpenAI's moderation classifier}~\citep{markov2023holistic}. WildGuard and Prompted-CoT are compared head-to-head in the main tables below; PromptGuard and OpenAI's moderation classifier are discussed separately (Section~\ref{sec:limitations}) rather than included in Tables~\ref{tab:wildguard_main}--\ref{tab:fin-overall}, since both show a fundamental taxonomy/design-scope mismatch with this paper's task: PromptGuard v1 by over-triggering on nearly everything outside adversarial framing (its apparently strong 0.909 adversarial-subset recall is an artifact of this, not effective detection), OpenAI's moderation classifier by under-triggering on harmful instructions whose surface text is not itself sexual, hateful, or violent. \textbf{ShieldGemma}~\citep{zeng2024shieldgemma} could not be evaluated: both checkpoints are gated HuggingFace repositories, access to which had not been granted at the time \mbox{of writing.}
 
-The results (Tables~\ref{tab:wildguard_main}--\ref{tab:jailbreakbench} and \ref{tab:fin-overall}) support four observations. WildGuard leads all three of our conditions on aggregate WildGuardTest accuracy, precision, and F1 (0.903/0.926/0.887 vs.\ Condition D's 0.856/0.821/0.842)---unsurprising, given it is trained specifically for this distribution on a larger, more diverse dataset than our 1000-example fine-tuning set. Central to this paper's claim though, \emph{adversarial-subset recall is the one metric across every table where Reflect-Guard leads every evaluated classifier, including WildGuard} (0.921 vs.\ 0.827 for WildGuard, 0.636 for the prompted teacher); WildGuard's adversarial-subset F1 (0.852) still exceeds Condition D's (0.802) since it pays a smaller precision cost for its recall, but on the specific axis of \emph{not missing} a disguised harmful prompt, Reflect-Guard is strongest.
+The results (Tables~\ref{tab:wildguard_main}--\ref{tab:jailbreakbench} and \ref{tab:fin-overall}) support four observations. WildGuard leads all three of our conditions on aggregate WildGuardTest accuracy, precision, and F$_1$ (0.903/0.926/0.887 vs.\ Condition D's 0.856/0.821/0.842)---unsurprising, given it is trained specifically for this distribution on a larger, more diverse dataset than our 1000-example fine-tuning set. Central to this paper's claim though, \emph{adversarial-subset recall is the one metric across every table where Reflect-Guard leads every evaluated classifier, including WildGuard} (0.921 vs.\ 0.827 for WildGuard, 0.636 for the prompted teacher); WildGuard's adversarial-subset F$_1$ (0.852) still exceeds Condition D's (0.802) since it pays a smaller precision cost for its recall, but on the specific axis of \emph{not missing} a disguised harmful prompt, Reflect-Guard is strongest.
 
-Condition B---not just D---beats WildGuard outright on JailbreakBench (100.0\% vs.\ 99.65\% DR), and D's own guard bypass rate (1.8\%) is lower than the prompted teacher's (3.19\%) though higher than WildGuard's (0.35\%). On the finance zero-shot-transfer benchmark, where none of the three external classifiers saw finance-specific training data, Reflect-Guard's F1, recall, and accuracy exceed WildGuard's and the prompted teacher's (0.929/0.867/0.903 vs.\ WildGuard's 0.921/0.854/0.894), but not Condition B's: Section~\ref{sec:finance-benchmark} reports that Condition B's two-seed mean finance F1 (0.945) and recall (0.896) are higher still, so this is a win against the external classifiers specifically, not against every evaluated condition. Reflect-Guard does beat the prompted-teacher baseline on \emph{every} metric across all three benchmarks: simply prompting a larger, more capable model with the same taxonomy does not reproduce what QLoRA fine-tuning plus reflection distillation achieves, even though the prompted model is the undistilled source of that same generated-\mbox{rationale capability.}
+Condition B---not just D---beats WildGuard outright on JailbreakBench (100.0\% vs.\ 99.65\% DR), and D's own guard bypass rate (1.8\%) is lower than the prompted teacher's (3.19\%) though higher than WildGuard's (0.35\%). On the finance zero-shot-transfer benchmark, where none of the three external classifiers saw finance-specific training data, Reflect-Guard's F$_1$, recall, and accuracy exceed WildGuard's and the prompted teacher's (0.929/0.867/0.903 vs.\ WildGuard's 0.921/0.854/0.894), but not Condition B's: Section~\ref{sec:finance-benchmark} reports that Condition B's two-seed mean finance F$_1$ (0.945) and recall (0.896) are higher still, so this is a win against the external classifiers specifically, not against every evaluated condition. Reflect-Guard does beat the prompted-teacher baseline on \emph{every} metric across all three benchmarks: simply prompting a larger, more capable model with the same taxonomy does not reproduce what QLoRA fine-tuning plus reflection distillation achieves, even though the prompted model is the undistilled source of that same generated-\mbox{rationale capability.}
 
-We therefore make a precise, narrow claim rather than an unqualified state-of-the-art claim: among the \emph{external} classifiers evaluated here, Reflect-Guard achieves the highest adversarial-subset recall on WildGuardTest and the highest F1 on the finance-transfer benchmark; it does not lead on aggregate WildGuardTest metrics, where WildGuard's broader, purpose-built training data yield a higher overall F1 (0.887 vs.\ 0.842), and our own Condition B---SFT without reflection---may match or exceed it on finance F1 by the two-seed evidence in Section~\ref{sec:finance-benchmark}.
+We therefore make a precise, narrow claim rather than an unqualified state-of-the-art claim: among the \emph{external} classifiers evaluated here, Reflect-Guard achieves the highest adversarial-subset recall on WildGuardTest and the highest F$_1$ on the finance-transfer benchmark; it does not lead on aggregate WildGuardTest metrics, where WildGuard's broader, purpose-built training data yield a higher overall F$_1$ (0.887 vs.\ 0.842), and our own Condition B---SFT without reflection---may match or exceed it on finance F$_1$ by the two-seed evidence in Section~\ref{sec:finance-benchmark}.
 
 \subsection{Limitations}
 \label{sec:limitations}
 
 Several limitations should be acknowledged.
 
-\paragraph{\hl{Teacher bias transfer.} %MDPI: Please confirm if it is should be heading 3, if is, please revised the format and added heading number, if not, please confirm if it needs to be put list format. The following highlights are the same.
+\subsubsection{Teacher bias transfer %MDPI: Please confirm if it is should be heading 3, if is, please revised the format and added heading number, if not, please confirm if it needs to be put list format. The following highlights are the same.
+%AU (reply to line 974): Revised to heading 3 (numbered). Same for following highlights.
 }
-Reflection annotations were generated by GPT-4o-mini with access to ground-truth labels, creating two risks: (1) the model may learn idiosyncratic teacher phrasing rather than generalizable reasoning; (2) systematic biases in GPT-4o-mini's safety judgments may be distilled into the student. Condition~C partially mitigates (2): strong performance without GT labels suggests the method is not merely memorizing label-conditioned templates. On (1), the finance-domain results (Section~\ref{sec:finance}) bear indirectly: the adapter improves detection on a domain absent from its training data, which would be surprising if the gain were purely stylistic mimicry rather than a transferable framing-detection capability, though the teacher's own biases could still transfer along with the useful signal, and the two are not distinguishable from our results alone. A direct test would compare teacher models (GPT-4, \hl{Claude,} %MDPI: Please state which version of the software was used.
+Reflection annotations were generated by GPT-4o-mini with access to ground-truth labels, creating two risks: (1) the model may learn idiosyncratic teacher phrasing rather than generalizable reasoning; (2) systematic biases in GPT-4o-mini's safety judgments may be distilled into the student. Condition~C partially mitigates (2): strong performance without GT labels suggests the method is not merely memorizing label-conditioned templates. On (1), the finance-domain results (Section~\ref{sec:finance}) bear indirectly: the adapter improves detection on a domain absent from its training data, which would be surprising if the gain were purely stylistic mimicry rather than a transferable framing-detection capability, though the teacher's own biases could still transfer along with the useful signal, and the two are not distinguishable from our results alone. A direct test would compare teacher models (e.g., GPT-4o, \hl{Claude Sonnet,} %MDPI: Please state which version of the software was used.
+%AU (reply to line 976): This mention refers to a proposed future comparison, not an experiment actually conducted in this paper, so no specific model version was 'used' here; we replaced 'GPT-4, Claude, etc.' with concrete current example models (GPT-4o, Claude Sonnet) for specificity. This is unrelated to the Claude subscription named in the Acknowledgments, which supported the preparation of this manuscript rather than this proposed experiment.
  etc.); we did not conduct this and list it as future work.
 
-\paragraph{\hl{False positives.}}
+\subsubsection{False positives}
 The 109 new false positives introduced relative to the clean baseline, 102 of them on the adversarial subset (Category 2 in Section~\ref{sec:qualitative}), could affect users with legitimate security research queries. The reflection text provides a natural mitigation signal: a low-confidence or self-contradictory reflection could trigger secondary verification rather than an immediate block.
 
-\paragraph{\hl{Competitive baselines remain incomplete.}}
-PromptGuard v1 (\texttt{meta-llama/Prompt-Guard-86M}) is not usable as a general-classifier comparison: it predicts \texttt{harmful} for 100\% of the WildGuardTest non-adversarial subset (903/903) and 100\% of the finance benchmark's benign examples (89/89), with non-trivial specificity only on the adversarial subset (61/455 correctly passed). This targets prompt-injection/jailbreak \emph{technique} detection specifically (per its model card), not general content harm, and is a known, independently reported limitation of v1; Meta's successor, Prompt Guard 2, reports a large calibration improvement (Recall@1\%FPR: 21.2\%~$\to$~97.5\%) that we did not evaluate. OpenAI's moderation classifier~\citep{markov2023holistic} shows the opposite failure mode: overall WildGuardTest F1 of 0.485 (recall 0.353), adversarial-subset recall of 0.226, and a JailbreakBench detection rate of 48.2\%---below even the un-fine-tuned Condition~0's 89.7\%---because its fixed taxonomy targets platform-content properties (sexual, hateful, violent, self-harm) rather than harmful \emph{instructions}, whose surface text need not itself be sexual, hateful, or violent. Both are excluded from Tables~\ref{tab:wildguard_main}--\ref{tab:fin-overall} as taxonomy/design-scope mismatches rather than like-for-like comparisons. We provide head-to-head comparisons against WildGuard and a prompted GPT-4o-mini reasoning classifier instead (Section~\ref{sec:competitive}); the one remaining gap is ShieldGemma, blocked on pending HuggingFace gated-repo access, which we commit to adding once granted.
+\subsubsection{Competitive baselines remain incomplete}
+PromptGuard v1 (\texttt{meta-llama/Prompt-Guard-86M}) is not usable as a general-classifier comparison: it predicts \texttt{harmful} for 100\% of the WildGuardTest non-adversarial subset (903/903) and 100\% of the finance benchmark's benign examples (89/89), with non-trivial specificity only on the adversarial subset (61/455 correctly passed). This targets prompt-injection/jailbreak \emph{technique} detection specifically (per its model card), not general content harm, and is a known, independently reported limitation of v1; Meta's successor, Prompt Guard 2, reports a large calibration improvement (Recall@1\%FPR: 21.2\%~$\to$~97.5\%) that we did not evaluate. OpenAI's moderation classifier~\citep{markov2023holistic} shows the opposite failure mode: overall WildGuardTest F$_1$ of 0.485 (recall 0.353), adversarial-subset recall of 0.226, and a JailbreakBench detection rate of 48.2\%---below even the un-fine-tuned Condition~0's 89.7\%---because its fixed taxonomy targets platform-content properties (sexual, hateful, violent, self-harm) rather than harmful \emph{instructions}, whose surface text need not itself be sexual, hateful, or violent. Both are excluded from Tables~\ref{tab:wildguard_main}--\ref{tab:fin-overall} as taxonomy/design-scope mismatches rather than like-for-like comparisons. We provide head-to-head comparisons against WildGuard and a prompted GPT-4o-mini reasoning classifier instead (Section~\ref{sec:competitive}); the one remaining gap is ShieldGemma, blocked on pending HuggingFace gated-repo access, which we commit to adding once granted.
 
-\paragraph{\hl{Remaining ablations and untested analyses.}}
+\subsubsection{Remaining ablations and untested analyses}
 Conditions 0, A, and C remain single-run (0 is training-free; A and C are secondary ablation arms), unlike B and D, which were retrained under three seeds (Section~\ref{sec:multiseed}). We also did not run LoRA-rank, reflection-length, training-epoch, or teacher-model ablations beyond the five conditions in Table~\ref{tab:ablation}, nor a training-set-size sensitivity analysis: all results use exactly 1000 examples, chosen as a practical budget rather than a scaling-curve-justified size, so whether the B-vs-D reallocation pattern is stable at an order of magnitude more data is untested. Finally, a matched-operating-point analysis (precision at fixed recall, or vice versa, between B and D) would distinguish whether reflection changes the model's \emph{ranking} of examples or simply shifts a scalar threshold but requires per-token log-probabilities at the verdict position that we did not record in any run underlying this paper, a concrete, well-specified direction for future work rather than something we approximate from data that cannot support it.
 
-\paragraph{\hl{Verdict-parser fallback behavior.}}
+\subsubsection{Verdict-parser fallback behavior}
 Our verdict parser defaults any non-conforming output to \texttt{unharmful} (data availability statement, above). Checked across every generation in this paper (3 conditions $\times$ 1699 WildGuardTest, 3 $\times$ 282 JailbreakBench, 2 $\times$ 329 finance prompts), this fallback fires exactly once: the Condition-D JailbreakBench truncation case discussed in Section~\ref{sec:discussion}, a parsing artifact rather than a model-judgment error.
 
-\paragraph{\hl{Reflection correctness and end-user exposure.}}
+\subsubsection{Reflection correctness and end-user exposure}
 A correct safety verdict can, in principle, rest on an incorrect or fabricated reflection, since both are generated by the same model. Section~\ref{sec:qualitative} directly measures one checkable dimension of this---whether the reflection's own stated conclusion is self-consistent with the verdict that follows it (effectively 100\% across 2309 predictions)---but this measures self-consistency, not correctness: a reflection can be internally consistent while factually wrong, as the JailbreakBench PAIR misses (Section~\ref{sec:discussion}) illustrate. Whether a \emph{correct} verdict co-occurs with unfaithful reasoning that does not manifest as a stated-conclusion mismatch remains unquantified and would require human annotation or a counterfactual faithfulness probe we did not conduct. Whether the reflection text should be exposed to end users is likewise unresolved: it aids interpretability and debugging but could also give an adversary a more direct signal for iterating against the classifier.
 
-\paragraph{\hl{Finance benchmark provenance and domain scope.}}
-Of the 329 finance-benchmark examples, 60 were drawn from WildGuardMix and 269~were generated by GPT-4o-mini, the same model family used for the reflection training targets (Section~\ref{sec:synthesis}), raising a shared-provenance concern. Splitting results by provenance argues against pure stylistic mimicry: the gain was \emph{larger} on the 60 real examples (F1 +12.6~pp) than the 269 synthetic ones (+4.0~pp), but this rested on only 60 real examples, and more fundamentally, neither portion's labels were independently human-verified. We report the finance results as evidence toward generalization under this caveat, not a settled demonstration, and view an independently constructed, human-validated benchmark as important future work. Finance is also the only high-risk domain tested beyond WildGuardTest/JailbreakBench; healthcare, cybersecurity, and legal domains each have their own professional-pretext adversarial patterns that may or may not transfer similarly, and building a comparable benchmark for any of them is future work of a similar scope to Section~\ref{sec:finance-benchmark}.
+\subsubsection{Finance benchmark provenance and domain scope}
+Of the 329 finance-benchmark examples, 60 were drawn from WildGuardMix and 269~were generated by GPT-4o-mini, the same model family used for the reflection training targets (Section~\ref{sec:synthesis}), raising a shared-provenance concern. Splitting results by provenance argues against pure stylistic mimicry: the gain was \emph{larger} on the 60 real examples (F$_1$ +12.6~pp) than the 269 synthetic ones (+4.0~pp), but this rested on only 60 real examples, and more fundamentally, neither portion's labels were independently human-verified. We report the finance results as evidence toward generalization under this caveat, not a settled demonstration, and view an independently constructed, human-validated benchmark as important future work. Finance is also the only high-risk domain tested beyond WildGuardTest/JailbreakBench; healthcare, cybersecurity, and legal domains each have their own professional-pretext adversarial patterns that may or may not transfer similarly, and building a comparable benchmark for any of them is future work of a similar scope to Section~\ref{sec:finance-benchmark}.
 
-\paragraph{\hl{Multilingual and cross-cultural generalization.}}
+\subsubsection{Multilingual and cross-cultural generalization}
 Both our training data and teacher reflections were English-only, so the LoRA adapter was not exposed to non-English adversarial patterns or culturally specific harm framings. Three concrete gaps follow: the reflection capability may not transfer to non-English inputs even though the base model supports multiple languages; the S1--S13 taxonomy itself reflects an English-speaking Western notion of harm that may miss what is salient elsewhere (e.g., caste-related content, region-specific stereotypes); and multilingual attackers can exploit code-switching or culturally embedded framings absent from our English training corpora. Addressing this would require target-language reflection data from a multilingual teacher, a culturally expanded taxonomy, and multilingual evaluation benchmarks, all left as future work.
 
 %==============================================================================
 \section{Conclusions and Future Directions}
 %==============================================================================
 
-We set out to test whether teaching a safety classifier to generate an explicit safety rationale before its verdict improved LLM safety classification and to isolate that effect from ordinary supervised fine-tuning (SFT) using a five-condition ablation. The clearest finding was that SFT on verdict labels alone (Condition B), with no reflection at all, already accounted for the majority of the aggregate improvement over the un-fine-tuned Llama-Guard-3-8B baseline: overall WildGuardTest F1 rose from 0.770 to 0.860 and JailbreakBench guard bypass rate fell from 10.3\% to 0.0\%. Adding reflection training on top of SFT (Condition D, the full Reflect-Guard model) did \emph{not} improve these aggregate numbers further: overall F1 fell slightly to 0.842 and guard bypass rate rose to 1.8\%, and Condition B had the higher F1 on both the adversarial and non-adversarial WildGuardTest subsets individually. What reflection did provide was a targeted, opposite-direction shift specifically on adversarially framed inputs: +7.6 pp recall on the adversarial subset relative to Condition B, at a cost of $-$7.9 pp precision on that same subset, while simultaneously improving precision (at a cost to recall) on non-adversarial inputs. This cross-subset pattern is not consistent with the simplest interpretation of a uniform global threshold shift, though a matched-operating-point analysis would be needed to distinguish a change in ranking from a change in calibration (Section~\ref{sec:limitations}); we described it descriptively as a real but narrower contribution than an unconditional improvement, best characterized as a precision--recall tradeoff rather than a strict gain. Retraining Conditions B and D under three random seeds showed both halves of this finding held consistently across the seeds evaluated rather than being artifacts of the single run reported above: Condition B's overall-F1 advantage over D ($p=0.018$, paired $t$-test) and Condition D's separately tested adversarial-recall advantage over B \mbox{($p=0.027$)} both held on every seed, while overall recall showed no significant difference between the two ($p=0.508$), precisely the reallocation-not-uniform-shift pattern the single-run cross-subset analysis suggested, now consistent across three seeds (Section~\ref{sec:multiseed}); we note these significance tests rested on only three paired observations and should be read cautiously. We further found that this adversarial-recall advantage extended to a comparison against an external, purpose-built safety classifier: among WildGuard, a prompted reasoning baseline, and Reflect-Guard, only Reflect-Guard lead on adversarial-subset recall, even though WildGuard achieved higher aggregate WildGuardTest metrics (Section~\ref{sec:competitive}). On the finance benchmark, however, preliminary two-seed evidence indicated Condition B may match or exceed Reflect-Guard (Section~\ref{sec:finance-benchmark}), so we did not extend the adversarial-recall finding to finance as a settled conclusion.
+We set out to test whether teaching a safety classifier to generate an explicit safety rationale before its verdict improved LLM safety classification and to isolate that effect from ordinary supervised fine-tuning (SFT) using a five-condition ablation. The clearest finding was that SFT on verdict labels alone (Condition B), with no reflection at all, already accounted for the majority of the aggregate improvement over the un-fine-tuned Llama-Guard-3-8B baseline: overall WildGuardTest F$_1$ rose from 0.770 to 0.860 and JailbreakBench guard bypass rate fell from 10.3\% to 0.0\%. Adding reflection training on top of SFT (Condition D, the full Reflect-Guard model) did \emph{not} improve these aggregate numbers further: overall F$_1$ fell slightly to 0.842 and guard bypass rate rose to 1.8\%, and Condition B had the higher F$_1$ on both the adversarial and non-adversarial WildGuardTest subsets individually. What reflection did provide was a targeted, opposite-direction shift specifically on adversarially framed inputs: +7.6 pp recall on the adversarial subset relative to Condition B, at a cost of $-$7.9 pp precision on that same subset, while simultaneously improving precision (at a cost to recall) on non-adversarial inputs. This cross-subset pattern is not consistent with the simplest interpretation of a uniform global threshold shift, though a matched-operating-point analysis would be needed to distinguish a change in ranking from a change in calibration (Section~\ref{sec:limitations}); we described it descriptively as a real but narrower contribution than an unconditional improvement, best characterized as a precision--recall tradeoff rather than a strict gain. Retraining Conditions B and D under three random seeds showed both halves of this finding held consistently across the seeds evaluated rather than being artifacts of the single run reported above: Condition B's overall-F$_1$ advantage over D ($p=0.018$, paired $t$-test) and Condition D's separately tested adversarial-recall advantage over B \mbox{($p=0.027$)} both held on every seed, while overall recall showed no significant difference between the two ($p=0.508$), precisely the reallocation-not-uniform-shift pattern the single-run cross-subset analysis suggested, now consistent across three seeds (Section~\ref{sec:multiseed}); we note these significance tests rested on only three paired observations and should be read cautiously. We further found that this adversarial-recall advantage extended to a comparison against an external, purpose-built safety classifier: among WildGuard, a prompted reasoning baseline, and Reflect-Guard, only Reflect-Guard lead on adversarial-subset recall, even though WildGuard achieved higher aggregate WildGuardTest metrics (Section~\ref{sec:competitive}). On the finance benchmark, however, preliminary two-seed evidence indicated Condition B may match or exceed Reflect-Guard (Section~\ref{sec:finance-benchmark}), so we did not extend the adversarial-recall finding to finance as a settled conclusion.
 
-In practical terms, this tradeoff is still useful in the safety-critical settings that motivated this work: a classifier that trades some precision for higher recall specifically on adversarially framed prompts is well suited to deployments where a missed jailbreak is costlier than an extra false positive. The reflection text may additionally be useful for triaging borderline cases rather than issuing an opaque binary verdict, a possible application we have not validated with any human evaluation of rationale usefulness, rather than a demonstrated benefit. This benefit is not free: measured directly rather than estimated (Section~\ref{sec:efficiency}), Reflect-Guard's median single-request latency was 17.9$\times$ that of the un-fine-tuned baseline and 14.3$\times$ that of Condition B, driven by the $\sim$92 additional reflection tokens generated per prompt, a cost that should be weighed explicitly against the targeted adversarial-recall gain in any deployment decision, rather than assumed away. The same LoRA adapter, evaluated with no additional fine-tuning, showed promising zero-shot transfer to a curated 329-example financial-harm benchmark (Section~\ref{sec:finance}), improving F1 from 0.868 to 0.929 and recall from 0.767 to 0.867 relative to the un-fine-tuned baseline, with zero false positives on benign financial queries. %EE: Please check intended meaning has been retained
+In practical terms, this tradeoff is still useful in the safety-critical settings that motivated this work: a classifier that trades some precision for higher recall specifically on adversarially framed prompts is well suited to deployments where a missed jailbreak is costlier than an extra false positive. The reflection text may additionally be useful for triaging borderline cases rather than issuing an opaque binary verdict, a possible application we have not validated with any human evaluation of rationale usefulness, rather than a demonstrated benefit. This benefit is not free: measured directly rather than estimated (Section~\ref{sec:efficiency}), Reflect-Guard's median single-request latency was 17.9$\times$ that of the un-fine-tuned baseline and 14.3$\times$ that of Condition B, driven by the $\sim$92 additional reflection tokens generated per prompt, a cost that should be weighed explicitly against the targeted adversarial-recall gain in any deployment decision, rather than assumed away. The same LoRA adapter, evaluated with no additional fine-tuning, showed promising zero-shot transfer to a curated 329-example financial-harm benchmark (Section~\ref{sec:finance}), improving F$_1$ from 0.868 to 0.929 and recall from 0.767 to 0.867 relative to the un-fine-tuned baseline, with zero false positives on benign financial queries. %EE: Please check intended meaning has been retained
  We do not attribute this transfer to reflection specifically: preliminary two-seed evidence (Section~\ref{sec:finance-benchmark}) indicates Condition B, fine-tuned without reflection, transfers to finance at least as well; the transfer is better attributed to the fine-tuning process in general than to reflection, and we hold the finance result overall to the caveats in Section~\ref{sec:limitations} regarding the benchmark's partly GPT-4o-mini-\mbox{generated provenance.}
 
-Several directions remain open before these findings can be considered conclusive. Reflect-Guard trails WildGuard on aggregate WildGuardTest metrics but leads on adversarial-subset recall and finance-benchmark F1 (Section~\ref{sec:competitive}); ShieldGemma is the one planned competitive baseline we could not run, blocked on pending HuggingFace gated-repo access, and we commit to adding it once access is granted. Remaining priorities (Section~\ref{sec:limitations}) are: extending multi-seed retraining (Section~\ref{sec:multiseed}) to Conditions 0, A, and C; LoRA-rank, reflection-length, training-epoch, teacher-model, and training-set-size ablations beyond the five conditions already tested; and an independently constructed, human-annotated finance benchmark to remove the shared-provenance caveat on our domain-generalization claim. Finally, extending the method to multilingual and cross-cultural settings remains an important open direction: generating reflection training data in target languages, adapting the safety taxonomy to culturally specific harm categories, and evaluating on non-English adversarial benchmarks would establish whether reflection-based reasoning generalizes beyond the English-language context studied here.
+Several directions remain open before these findings can be considered conclusive. Reflect-Guard trails WildGuard on aggregate WildGuardTest metrics but leads on adversarial-subset recall and finance-benchmark F$_1$ (Section~\ref{sec:competitive}); ShieldGemma is the one planned competitive baseline we could not run, blocked on pending HuggingFace gated-repo access, and we commit to adding it once access is granted. Remaining priorities (Section~\ref{sec:limitations}) are: extending multi-seed retraining (Section~\ref{sec:multiseed}) to Conditions 0, A, and C; LoRA-rank, reflection-length, training-epoch, teacher-model, and training-set-size ablations beyond the five conditions already tested; and an independently constructed, human-annotated finance benchmark to remove the shared-provenance caveat on our domain-generalization claim. Finally, extending the method to multilingual and cross-cultural settings remains an important open direction: generating reflection training data in target languages, adapting the safety taxonomy to culturally specific harm categories, and evaluating on non-English adversarial benchmarks would establish whether reflection-based reasoning generalizes beyond the English-language context studied here.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \vspace{6pt}
@@ -1022,13 +1078,17 @@ Several directions remain open before these findings can be considered conclusiv
 \informedconsent{Not applicable.}
 
 \dataavailability{Code, evaluation scripts, and data are openly available \hl{at} %MDPI: Please add the access date (format: Date Month Year) of the following website link, e.g., accessed on 1 January 2020.
- \url{https://github.com/lixinglin-AI/AI-Safety}, including: training/evaluation scripts for all five ablation conditions; teacher prompt templates and reflection-generation configuration (\texttt{reflect\_guard/config.py}, \texttt{synthesize.py}); generated reflection training annotations (\texttt{reflect\_guard/*\_train.jsonl}, 1000 examples each); the finance benchmark and construction script (\texttt{fin/fin\_benchmark.jsonl},\linebreak \texttt{fin/build\_benchmark.py}); per-example raw predictions for every condition and seed\linebreak (\texttt{results/*.json}, \texttt{results/seed\_variance\_report.txt}) with the multi-seed aggregation script\linebreak \textls[-15]{(\texttt{reflect\_guard/compute\_seed\_variance.py}); raw latency measurements (\texttt{results/latency/*.json});} and evaluation scripts/outputs for all four competitive baselines (\texttt{baselines/evaluate\_*.py}, \texttt{aggregate\_comparison.py}, \texttt{results/baselines/*.json}). Upstream datasets (WildGuardMix, AdvBench, JailbreakBench) are publicly available at their sources; exact identifiers, configs, and the sampling seed are given in Section~\ref{sec:metrics}. Python package versions are pinned in \texttt{requirements.txt}. Model outputs are parsed deterministically: after stripping any \texttt{<reflection>} block, an output is labeled \texttt{harmful} if and only if the remaining text \emph{begins} with ``unsafe''; any other case---including malformed generations, missing verdict tokens, or inference errors---defaults to \texttt{unharmful}, a design choice whose effect on reported metrics is not isolated beyond the single measured instance in Section~\ref{sec:limitations}. The QLoRA adapter weights evaluated in this paper will be made available no later than final publication, rather than only after acceptance. We will also tag an immutable release (a fixed commit hash or version tag) of the code repository corresponding exactly to the results reported in this manuscript, since the upstream dataset revisions used at training time were not themselves pinned by version.}
+%AU (reply to line 1022): Access date added: accessed on 30 September 2026.
+ \url{https://github.com/lixinglin-AI/AI-Safety} (accessed on 30 September 2026), including: training/evaluation scripts for all five ablation conditions; teacher prompt templates and reflection-generation configuration (\texttt{reflect\_guard/config.py}, \texttt{synthesize.py}); generated reflection training annotations (\texttt{reflect\_guard/*\_train.jsonl}, 1000 examples each); the finance benchmark and construction script (\texttt{fin/fin\_benchmark.jsonl},\linebreak \texttt{fin/build\_benchmark.py}); per-example raw predictions for every condition and seed\linebreak (\texttt{results/*.json}, \texttt{results/seed\_variance\_report.txt}) with the multi-seed aggregation script\linebreak \textls[-15]{(\texttt{reflect\_guard/compute\_seed\_variance.py}); raw latency measurements (\texttt{results/latency/*.json});} and evaluation scripts/outputs for all four competitive baselines (\texttt{baselines/evaluate\_*.py}, \texttt{aggregate\_comparison.py}, \texttt{results/baselines/*.json}). Upstream datasets (WildGuardMix, AdvBench, JailbreakBench) are publicly available at their sources; exact identifiers, configs, and the sampling seed are given in Section~\ref{sec:metrics}. Python package versions are pinned in \texttt{requirements.txt}. Model outputs are parsed deterministically: after stripping any \texttt{<reflection>} block, an output is labeled \texttt{harmful} if and only if the remaining text \emph{begins} with ``unsafe''; any other case---including malformed generations, missing verdict tokens, or inference errors---defaults to \texttt{unharmful}, a design choice whose effect on reported metrics is not isolated beyond the single measured instance in Section~\ref{sec:limitations}. The QLoRA adapter weights evaluated in this paper will be made available no later than final publication, rather than only after acceptance. We will also tag an immutable release (a fixed commit hash or version tag) of the code repository corresponding exactly to the results reported in this manuscript, since the upstream dataset revisions used at training time were not themselves pinned by version.}
 
 \acknowledgments{\hl{The} %MDPI: Please ensure that all individuals included in this section have consented to the acknowledgement.
- authors thank APEX Data Consulting LLC for support that contributed to this work, including data processing assistance, \hl{OpenAI API} %MDPI: Please state which version of the software was used.
+%AU (reply to line 1025): Confirmed. The company name is 'APEX Data Solutions LLC' (corrected accordingly); APEX Data Solutions LLC has consented to being acknowledged.
+ authors thank \authchg{APEX Data Solutions LLC} for support that contributed to this work, including data processing assistance, \hl{OpenAI API} %MDPI: Please state which version of the software was used.
+%AU (reply to line 1026): Confirmed against the repository's configuration files, and confirmed by the authors: the OpenAI API access covered by this acknowledgment was used only for the \texttt{gpt-4o-mini} model (the reflection-generation teacher and the Prompted-CoT baseline, as already named throughout the manuscript) and the \texttt{omni-moderation-latest} endpoint (the OpenAI moderation-classifier baseline, Section~\ref{sec:competitive}); no other OpenAI model or snapshot was used under this sponsorship.
  access, and sponsorship of a Claude subscription used during the analysis and preparation of this manuscript.}
 
 \conflictsofinterest{\hl{The} %MDPI: Affiliation 3 is a company, relevant potential commercial interests must be disclosed in the “Conflicts of Interest” section rather than stating “no conflict of interest”. Please check whether any potential commercial interests are declared according to the relevant guidelines, which can be found here: https://www.mdpi.com/ethics#_bookmark17.
+%AU (reply to line 1029): Confirmed. The author affiliation that was previously listed as an employer (Citigroup) has already been revised to 'Independent Researcher' (see affiliation list), so no employer-based commercial interest applies there. The authors have confirmed that the relationship with APEX Data Solutions LLC (support, data processing assistance, OpenAI API access, Claude subscription) does not need to be disclosed as a conflict of interest.
  authors declare no conflicts of interest.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1077,7 +1137,8 @@ Sun,~L.; Huang,~Y.; Wang,~H.; Wu,~S.; Zhang,~Q.; Gao,~C.; Huang,~Y.; Lyu,~W.; Zh
 
 \bibitem[Meta(2024b)]{metallamaguard3}%6
 \textls[-15]{Meta. {Llama Guard 3-8B}. Available \hl{online:} %MDPI: We cannot access the link to this website. Please check and provide an available website.
- \url{https://huggingface.co/meta-llama/Llama-Guard-3-8B} (accessed on 22 August 2026).}
+%AU (reply to line 1077): The Hugging Face page is gated. Link replaced by Meta's public model card on GitHub. Confirmed: the replacement link opens and displays Meta's Llama Guard 3-8B model card.
+ \url{https://github.com/meta-llama/PurpleLlama/blob/main/Llama-Guard3/8B/MODEL_CARD.md} (accessed on 22 August 2026).}
 
 \bibitem[Chao et~al.(2023)]{chao2023jailbreaking}%11
 Chao,~P.; Robey,~A.; Dobriban,~E.; Hassani,~H.; Pappas,~G.J.; Wong,~E.
@@ -1093,6 +1154,7 @@ Universal and transferable adversarial attacks on aligned language models.
 Liu,~X.; Xu,~N.; Chen,~M.; Xiao,~C.
 {AutoDAN}: Generating stealthy jailbreak prompts on aligned large language models.
 In { Proceedings of the International Conference on Learning Representations (ICLR)}, \hl{Vienna, Austria, 7--11 May} %MDPI: We added the location and date of conference, please confirm.
+%AU (reply to line 1093): Confirmed. ICLR 2024 took place in Vienna, Austria, 7-11 May 2024.
  2024.
 
 
@@ -1100,6 +1162,7 @@ In { Proceedings of the International Conference on Learning Representations (IC
 Wei,~A.; Haghtalab,~N.; Steinhardt,~J.
 Jailbroken: How does {LLM} safety training fail?
 In {\em Advances in Neural Information Processing Systems}; \hl{Curran Associates, Inc.: Red Hook, NY, USA,} %MDPI: We added the name of the publisher and their location. Please confirm. Same as below.
+%AU (reply to line 1100): Confirmed. Curran Associates, Inc., Red Hook, NY, USA is the NeurIPS proceedings publisher; same for the other NeurIPS entries.
   2024.
 
 \bibitem[Liu et~al.(2025)]{liu2025guardreasoner}%28
@@ -1131,6 +1194,7 @@ Meta. {Llama Guard 2}. Available online: \url{https://huggingface.co/meta-llama/
 
 \bibitem[Zeng et~al.(2024)]{zeng2024shieldgemma}%8
 \hl{Zeng, W.; Liu, Y.; Mullins, R.; Peran, L.; Fernandez, J.; Harkous, H.; Narasimhan, K.; Proud, D.; Kumar, P.; Radharapu, B.; et al.} %MDPI: We completed and revised the author names, please confirm.
+%AU (reply to line 1131): Confirmed (Zeng, Liu, Mullins, Peran, Fernandez, Harkous, Narasimhan, Proud, Kumar, Radharapu, et al.).
 {ShieldGemma}: Generative {AI} content moderation based on {Gemma}.
 {\em arXiv} {\bf 2024}, arXiv:2407.21772.
 
@@ -1186,8 +1250,9 @@ Wang,~X.; Gao,~S.; Zhao,~J.
 Chain-of-thought prompting for content moderation.
 {\em arXiv} {\bf 2024}, arXiv:2402.12490.
 
-\bibitem[Bai et~al.(2024)]{bai2024deliberative}%22
+\bibitem[Guan et~al.(2024)]{bai2024deliberative}%22
 \hl{Guan, M.Y.; Joglekar, M.; Wallace, E.; Jain, S.; Barak, B.; Helyar, A.; Dias, R.; Vallone, A.; Ren, H.; Wei, J.; et al.} %MDPI: We completed and revised the author names, please confirm.
+%AU (reply to line 1188): Confirmed (Guan, Joglekar, Wallace, Jain, Barak, Helyar, Dias, Vallone, Ren, Wei, et al.). The bibitem label was changed from 'Bai et al.' to 'Guan et al.' to match.
 Deliberative alignment: Reasoning enables safer language models.
 {\em arXiv} {\bf 2024}, arXiv:2412.16339.
 
